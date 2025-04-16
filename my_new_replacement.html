@@ -12,6 +12,8 @@
 	--P5:1;
 	--P12:0;
 	--P13:0;
+	
+	--node-w:120px;
 }
 body {
 	width:100svw;
@@ -57,7 +59,7 @@ body {
 	color:#fff;
 	background-color:#1f2937;
 	border-radius:calc(var(--P0) * 5px);
-	min-width:calc(var(--P0) * 120px);
+	width:calc(var(--P0) * var(--node-w));
 }
 .node_title {
 	border-top-left-radius:.25rem;
@@ -162,44 +164,43 @@ const set_css_var = (node, name, value) =>
 ;
 
 const node_types = {
-	"int+int":["+",[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,"c"]],(a,b)=>a+b],
-	"int->str":["toString",[[TYPE_INT,"a"]],[[TYPE_TEXT,"b"]],(a)=>b.toString()],
-	"concat":["concat",[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,"c"]],(a,b)=>a.concat(b)],
+	"int+int":["+",120,[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,"c"]],(a,b)=>a+b],
+	"int->str":["toString",120,[[TYPE_INT,"a"]],[[TYPE_TEXT,"b"]],(a)=>b.toString()],
+	"concat":["concat",120,[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,"c"]],(a,b)=>a.concat(b)],
 };
 
 const node_coords = [];
 const edges = [];
 const create_node = (node_type_name, x, y) => {
+	const [title, node_w, inputs, outputs] = node_types[node_type_name];
+	
 	const node = document.createElement("node-node");
-	node.dataset.i = node_coords.length>>1;
+	node.dataset.i = node_coords.length / 3;
 	node.classList.add("node");
 	
 	const node_title = document.createElement("node-unclickable");
 	node_title.classList.add("node_title");
-	node_title.innerText = node_types[node_type_name][0];
+	node_title.innerText = title;
 	node.appendChild(node_title);
 	
 	const node_contents = document.createElement("node-unclickable");
 	node_contents.classList.add("node_contents");
 	node.appendChild(node_contents);
 	
-	const inputs  = node_types[node_type_name][1];
-	const outputs = node_types[node_type_name][2];
-	
-	for (let i = 0, M = node_types[node_type_name][1].length, N = node_types[node_type_name][2].length;  (i < M)||(i < N);  ++i){
+	for (let i = 0, M = inputs.length, N = outputs.length;  (i < M)||(i < N);  ++i){
 		const row = document.createElement("node-unclickable");
 		row.classList.add("node_row");
 		
-		for (let j = 1;  j < 3;  ++j){
+		for (let j = 2;  j < 4;  ++j){
 			if (i < node_types[node_type_name][j].length){
 				const [vartype, labelstr] = node_types[node_type_name][j][i];
 				
 				const item = document.createElement("node-unclickable");
 				item.classList.add("node_row_col");
-				item.classList.add(["node_input","node_output"][j-1]);
+				item.classList.add(["node_input","node_output"][j-2]);
 				
 				const circle = document.createElement("node-circle");
-				circle.dataset.iotype = ["node_input","node_output"][j-1];
+				circle.dataset.iotype = ["node_input","node_output"][j-2];
 				circle.dataset.vartype = vartype;
 				item.appendChild(circle);
 				
@@ -217,10 +218,11 @@ const create_node = (node_type_name, x, y) => {
 		node_contents.appendChild(row);
 	}
 	
-	node_coords.push(x,y);
+	node_coords.push(x,y,node_w);
 	
 	set_css_var(node, "--dx", x+"px");
 	set_css_var(node, "--dy", y+"px");
+	set_css_var(node, "--node-w", node_w+"px");
 	
 	rootnode.appendChild(node);
 };
@@ -280,27 +282,27 @@ document.documentElement.addEventListener("pointerdown", eventobj => {
 				currently_dragging_node = currently_dragging_node.parentNode;
 			
 			const node_indx = currently_dragging_node.dataset.i|0;
-			clickorigin_x = node_coords[node_indx<<1] - eventobj.clientX;
-			clickorigin_y = node_coords[(node_indx<<1)+1] - eventobj.clientY;
+			clickorigin_x = node_coords[node_indx*3] - eventobj.clientX;
+			clickorigin_y = node_coords[(node_indx*3)+1] - eventobj.clientY;
 			break;
 	}
 });
 const set_pth_coords = edge_indx => {
 	const [node1_indx, node2_indx, pth] = edges[edge_indx];
-	const x1 = node_coords[node1_indx<<1];
-	const y1 = node_coords[(node1_indx<<1) + 1];
-	const x2 = node_coords[node2_indx<<1];
-	const y2 = node_coords[(node2_indx<<1) + 1];
+	const x1 = node_coords[node1_indx*3];
+	const y1 = node_coords[(node1_indx*3) + 1];
+	const x2 = node_coords[node2_indx*3] + node_coords[node2_indx*3 + 2];
+	const y2 = node_coords[(node2_indx*3) + 1];
 	pth.setAttributeNS(null, "d", `M${x1},${y1} L${x2},${y2}`);
 }
 document.documentElement.addEventListener("pointermove", eventobj => {
 	const target = eventobj.target;
 	if (currently_dragging_node !== null){
 		const node_indx = currently_dragging_node.dataset.i|0;
-		node_coords[node_indx<<1] = clickorigin_x + eventobj.clientX;
-		node_coords[(node_indx<<1)+1] = clickorigin_y + eventobj.clientY;
-		set_css_var(currently_dragging_node, "--dx", node_coords[node_indx<<1]+"px");
-		set_css_var(currently_dragging_node, "--dy", node_coords[(node_indx<<1)+1]+"px");
+		node_coords[node_indx*3] = clickorigin_x + eventobj.clientX;
+		node_coords[(node_indx*3)+1] = clickorigin_y + eventobj.clientY;
+		set_css_var(currently_dragging_node, "--dx", node_coords[node_indx*3]+"px");
+		set_css_var(currently_dragging_node, "--dy", node_coords[(node_indx*3)+1]+"px");
 		for (let edge_indx = 0;  edge_indx < edges.length;  ++edge_indx){
 			const edge = edges[edge_indx];
 			if ((edge[0] === node_indx) || (edge[1] === node_indx)){
@@ -317,7 +319,12 @@ document.documentElement.addEventListener("pointerup", eventobj => {
 			const node2 = target.parentNode.parentNode.parentNode.parentNode;
 			if ((target !== currently_dragging_nodecircle) && (target.dataset.iotype !== currently_dragging_nodecircle.dataset.iotype) && (node1 !== node2) && (target.dataset.vartype === currently_dragging_nodecircle.dataset.vartype)){
 				const pth = document.createElementNS("http://www.w3.org/2000/svg", "path");
-				edges.push([node1.dataset.i|0, node2.dataset.i|0, pth]);
+				
+				if (currently_dragging_nodecircle.dataset.iotype === "node_input")
+					edges.push([node1.dataset.i|0, node2.dataset.i|0, pth]);
+				else
+					edges.push([node2.dataset.i|0, node1.dataset.i|0, pth]);
+				
 				set_pth_coords(edges.length - 1);
 				edges_svg.appendChild(pth);
 			}
