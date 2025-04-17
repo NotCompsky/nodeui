@@ -188,6 +188,10 @@ node-circle {
 	<details id="controlscontainer">
 		<summary>Controls</summary>
 		<button id="runbtn">Run</button><br>
+		<button id="serialise_json">Copy nodes to clipboard</button><br>
+		<button id="serialise_py">Copy Python to clipboard</button><br>
+		<select id="selectnewnode"></select>
+		<p><b>Zoom</b> with mouse (this replaces scrolling etc because I am lazy)</p>
 		<p><b>To detach edge</b>: Click and drag from one connection to the other (same action as creating an edge)</p>
 		<p><b>To detach node</b>: Click and press 'delete'</p>
 		<p><b>NOTE for developer of this program</b>: Any node that has a state-affecting action should be in the execution flow, so that its action is executed in the correct order.</p>
@@ -207,6 +211,7 @@ const vartype_enum2classname = ["vartype_text","vartype_int","vartype_float","va
 
 const rootnode = document.getElementById("nodescontainer");
 const edges_svg = document.getElementById("edges_svg");
+const selectnewnode = document.getElementById("selectnewnode");
 
 const set_css_var = (node, name, value) =>
 	node.style.setProperty(name, value)
@@ -348,7 +353,7 @@ const create_edge = (srcnode, dstnode, srcline, dstline, vartype) => {
 	set_pth_coords(edges.length - 1);
 	edges_svg.appendChild(pth);
 };
-const serialise_all_nodes = () => {
+const get_all_nodes_as_tidied_arrays = () => {
 	const nodeindx2meta = [];
 	for (let node of rootnode.children){
 		const nodeindx = node.dataset.i|0;
@@ -365,11 +370,29 @@ const serialise_all_nodes = () => {
 			input_values.push(inp.value);
 		}
 	}
-	return JSON.stringify([
+	return [
 		newnodes,
 		edges.filter(x => x!==null).map(x => [oldnodeindx2newnodeindx[x[0]],oldnodeindx2newnodeindx[x[1]],x[2],x[3]]),
 		input_values
-	]);
+	];
+};
+const serialise_all_nodes = () => {
+	return JSON.stringify(get_all_nodes_as_tidied_arrays());
+};
+const serialise_all_nodes_as_python = () => {
+	const [nodes, edges, input_values] = get_all_nodes_as_tidied_arrays();
+	
+	let varindx = 0;
+	let py = "";
+	for (let val of input_values){
+		py += `v${varindx++} = ${JSON.stringify(val)}\n`;
+	}
+	
+	const nodeindx2outputvals = new Array(nodeindx2inputsourcenodes.length);
+	nodeindx2outputvals.fill(null);
+	execute_graph(nodeindx2outputvals, true);
+	
+	return py;
 };
 const deserialise_all_nodes = metas => {
 	for (let [typename, x, y] of metas[0])
@@ -419,6 +442,16 @@ const zoom_graph_about_clientXY = (clientX,clientY,r) => {
 set_graph_canvas_dimensions();
 document.documentElement.addEventListener("wheel", eventobj => {
 	zoom_graph_about_clientXY(eventobj.clientX, eventobj.clientY, 1.0 - 0.001 * eventobj.deltaY * (1 + 33*eventobj.deltaMode));
+});
+
+for (let [varname,meta] of Object.entries(node_types)){
+	const opt = document.createElement("option");
+	opt.value = varname;
+	opt.innerText = meta[0];
+	selectnewnode.appendChild(opt);
+}
+selectnewnode.addEventListener("change", () => {
+	create_node(selectnewnode.value, 0, 0);
 });
 
 let currently_dragging_nodecircle = null;
@@ -613,6 +646,12 @@ document.getElementById("runbtn").addEventListener("click", () => {
 			}
 		}
 	}
+});
+document.getElementById("serialise_json").addEventListener("click", () => {
+	navigator.clipboard.writeText(serialise_all_nodes());
+});
+document.getElementById("serialise_py").addEventListener("click", () => {
+	navigator.clipboard.writeText(serialise_all_nodes_as_python());
 });
 	</script>
 </body>
