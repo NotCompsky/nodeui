@@ -313,18 +313,23 @@ const serialise_all_nodes = () => {
 	const nodeindx2meta = [];
 	for (let node of rootnode.children){
 		const nodeindx = node.dataset.i|0;
-		nodeindx2meta.push([nodeindx, node.dataset.typename, node_coords[3*nodeindx], node_coords[3*nodeindx+1]]);
+		nodeindx2meta.push([nodeindx, node, node.dataset.typename, node_coords[3*nodeindx], node_coords[3*nodeindx+1]]);
 	}
 	const oldnodeindx2newnodeindx = {};
 	const newnodes = [];
+	const input_values = [];
 	for (let i = 0, ls = nodeindx2meta.sort((a,b)=>b[0]<a[0]), N = ls.length;  i < N;  ++i){
 		const val = ls[i];
 		oldnodeindx2newnodeindx[val[0]] = i;
-		newnodes.push(val.slice(1));
+		newnodes.push(val.slice(2));
+		for (let inp of val[1].getElementsByTagName("input")){
+			input_values.push(inp.value);
+		}
 	}
 	return JSON.stringify([
 		newnodes,
-		edges.map(x => [oldnodeindx2newnodeindx[x[0]],oldnodeindx2newnodeindx[x[1]],x[2],x[3]])
+		edges.map(x => [oldnodeindx2newnodeindx[x[0]],oldnodeindx2newnodeindx[x[1]],x[2],x[3]]),
+		input_values
 	]);
 };
 const deserialise_all_nodes = metas => {
@@ -333,8 +338,13 @@ const deserialise_all_nodes = metas => {
 	for (let [srcnode, dstnode, srcline, dstline] of metas[1]){
 		create_edge(srcnode, dstnode, srcline, dstline);
 	}
+	for (let i = 0, node_indx = 0;  i < metas[2].length;  ++node_indx){
+		for (let inp of rootnode.children[node_indx].getElementsByTagName("input")){
+			inp.value = metas[2][i++]; // NOTE: Is blank if invalid
+		}
+	}
 };
-deserialise_all_nodes(JSON.parse('[[["int",241,59],["int+int",464,139],["int->str",704,35],["concat",903,17],["int+int",456,23]],[[0,4,1,0]]]'));
+deserialise_all_nodes(JSON.parse('[[["int",234,93],["int+int",434,216],["int->str",572,109],["concat",776,97],["int+int",431,96],["exe",309,-7],["log",805,-10],["log",1018,-13]],[[0,4,1,0],[5,6,0,0],[4,2,0,0],[2,3,0,0],[2,6,0,1],[6,7,0,0],[3,7,0,1],[2,3,0,1]],["1"]]'));
 
 const graph__transformation_matrix = [1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0];
 let graph_canvas_width__physical = 0;
