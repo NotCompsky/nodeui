@@ -144,6 +144,10 @@ node-circle {
 	--node-circle-cl: #ff0;
 	--node-circle-cl2: #ff0;
 }
+.vartype_bool {
+	--node-circle-cl: #0f0;
+	--node-circle-cl2: #000;
+}
 
 #edges_svg {
 	position:absolute;
@@ -188,7 +192,8 @@ const TYPE_INT = 1;
 const TYPE_FLOAT = 2;
 const TYPE_EXECUTION = 3;
 const TYPE_INPUT = 4;
-const vartype_enum2classname = ["vartype_text","vartype_int","vartype_float","vartype_execution"];
+const TYPE_BOOL = 5;
+const vartype_enum2classname = ["vartype_text","vartype_int","vartype_float","vartype_execution",null,"vartype_bool"];
 
 const rootnode = document.getElementById("nodescontainer");
 const edges_svg = document.getElementById("edges_svg");
@@ -206,6 +211,11 @@ const node_types = {
 	"exe":["Exec",40,[],[[TYPE_EXECUTION,""]],null],
 	
 	"log":["Log",40,[[TYPE_EXECUTION,""],[TYPE_TEXT,""]],[[TYPE_EXECUTION,""]],(node,inputs)=>{console.log("LOGGING",inputs[0]);return [];}],
+	
+	"or":["OR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]||inputs[1]]],
+	"and":["AND",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]&&inputs[1]]],
+	"xor":["XOR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]!==inputs[1]]],
+	"not":["NOT",40,[[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[!inputs[0]]],
 	
 	"int+int":["+",120,[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,""]],(node,inputs)=>[inputs[0]+inputs[1]]],
 	"int->str":["toString",120,[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
