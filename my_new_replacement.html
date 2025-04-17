@@ -180,7 +180,7 @@ node-circle {
 	<details id="controlscontainer">
 		<summary>Controls</summary>
 		<button id="runbtn">Run</button><br>
-		<p><b>To detach edge</b>: Click and press 'delete'</p>
+		<p><b>To detach edge</b>: Click and drag from one connection to the other (same action as creating an edge)</p>
 		<p><b>To detach node</b>: Click and press 'delete'</p>
 		<p><b>NOTE for developer of this program</b>: Any node that has a state-affecting action should be in the execution flow, so that its action is executed in the correct order.</p>
 	</details>
@@ -349,7 +349,7 @@ const serialise_all_nodes = () => {
 	}
 	return JSON.stringify([
 		newnodes,
-		edges.map(x => [oldnodeindx2newnodeindx[x[0]],oldnodeindx2newnodeindx[x[1]],x[2],x[3]]),
+		edges.filter(x => x!==null).map(x => [oldnodeindx2newnodeindx[x[0]],oldnodeindx2newnodeindx[x[1]],x[2],x[3]]),
 		input_values
 	]);
 };
@@ -436,7 +436,7 @@ document.documentElement.addEventListener("pointermove", eventobj => {
 		set_css_var(currently_dragging_node, "--dy", node_coords[(node_indx*3)+1]+"px");
 		for (let edge_indx = 0;  edge_indx < edges.length;  ++edge_indx){
 			const edge = edges[edge_indx];
-			if ((edge[0] === node_indx) || (edge[1] === node_indx)){
+			if ((edge !== null) && ((edge[0] === node_indx) || (edge[1] === node_indx))){
 				set_pth_coords(edge_indx);
 			}
 		}
@@ -468,8 +468,17 @@ document.documentElement.addEventListener("pointerup", eventobj => {
 				}
 				
 				let output_has_no_prev_input = true;
-				for (let meta of edges){
-					output_has_no_prev_input &&= ((meta[1] !== dst_indx) || (meta[3] !== dst_line));
+				for (let i = 0;  i < edges.length;  ++i){
+					const edge = edges[i];
+					if ((edge !== null) && (edge[1] === dst_indx) && (edge[3] === dst_line)){
+						if ((edge[0] === src_indx) && (edge[2] === src_line)){
+							nodeindx2inputsourcenodes[dst_indx][dst_line] = null;
+							edge[4].remove();
+							edges[i] = null;
+						}
+						output_has_no_prev_input = false;
+						break;
+					}
 				}
 				
 				if (output_has_no_prev_input)
@@ -500,7 +509,7 @@ document.getElementById("runbtn").addEventListener("click", () => {
 			while(true){
 				exe_flow_node_indices.push(prev_flow_node_indx);
 				for (let edge of edges){
-					if (edge[0] === prev_flow_node_indx){
+					if ((edge !== null) && (edge[0] === prev_flow_node_indx)){
 						prev_flow_node_indx = edge[1];
 						break;
 					}
