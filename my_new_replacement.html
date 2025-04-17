@@ -223,9 +223,11 @@ const get_input_value = (node) => {
 const node_types = {
 	"int":["Integer",120,[[TYPE_INPUT,{"vartype":TYPE_INT,"type":"number","step":"1"}]],[[TYPE_INT,""]],(node,inputs)=>[get_input_value(node)|0]],
 	"str":["String",120,[[TYPE_INPUT,{"vartype":TYPE_TEXT,"type":"text"}]],[[TYPE_TEXT,""]],node=>[get_input_value(node)]],
-	"exe":["Exec",40,[],[[TYPE_EXECUTION,""]],null],
+	"exe":["Exec",40,[],[[TYPE_EXECUTION,""]],(node,inputs)=>[true]],
 	
-	"log":["Log",40,[[TYPE_EXECUTION,""],[TYPE_TEXT,""]],[[TYPE_EXECUTION,""]],(node,inputs)=>{console.log("LOGGING",inputs[0]);return [];}],
+	"log":["Log",40,[[TYPE_EXECUTION,""],[TYPE_TEXT,""]],[[TYPE_EXECUTION,""]],(node,inputs)=>{console.log("LOGGING",inputs[1]);return [true];}],
+	
+	"if":["If",60,[[TYPE_EXECUTION,""],[TYPE_BOOL,""]],[[TYPE_EXECUTION,"true"],[TYPE_EXECUTION,"false"]],(node,inputs)=>[inputs[1],!inputs[1]]],
 	
 	"csv_str":["CSV (Strings)",180,[[TYPE_INPUT,""]],[[TYPE_STRLIST,""]],(node,inputs)=>[get_input_value(node).split(",")]],
 	"csv_int":["CSV (Integers)",180,[[TYPE_INPUT,""]],[[TYPE_INTLIST,""]],(node,inputs)=>[get_input_value(node).split(",").map(x => x|0)]],
@@ -543,39 +545,20 @@ document.documentElement.addEventListener("pointerup", eventobj => {
 });
 
 document.getElementById("runbtn").addEventListener("click", () => {
-	const N = rootnode.children.length;
-	/*if (N !== nodeindx2inputsourcenodes.length){
-		throw Error(`${nodeindx2inputsourcenodes} == nodeindx2inputsourcenodes.length != rootnode.children.length == ${N}`);
-	}*/
+	const nodeindx2outputvals = new Array(nodeindx2inputsourcenodes.length);
+	nodeindx2outputvals.fill(null);
+	
+	const N = nodeindx2inputsourcenodes.length;
 	
 	// WARNING: Assuming there is exactly 1 'exe' node
-	const exe_flow_node_indices = [];
+	let next_expected_exe_flow_node_indx = 0;
 	for (let i of all_execution_flow_nodes){
 		if (node2typename[i] === "exe"){
-			// The idea is that the 'exe' node is a function's start, and the sum inputs of its execution flow are the function's parameters, and (TODO) the function can return values
-			// NOTE: atm I assume no node has multiple exec inputs/outputs. If they did, that would presumably be some kind of parallel processing.
-			
-			// NOTE: 'exe' node has no inputs, so this code cannot loop
-			let prev_flow_node_indx = i;
-			while(true){
-				exe_flow_node_indices.push(prev_flow_node_indx);
-				for (let edge of edges){
-					if ((edge !== null) && (edge[0] === prev_flow_node_indx)){
-						prev_flow_node_indx = edge[1];
-						break;
-					}
-				}
-				
-				if (prev_flow_node_indx === exe_flow_node_indices[exe_flow_node_indices.length-1])
-					// i.e. no next node found
-					break;
-			}
+			next_expected_exe_flow_node_indx = i;
 			break;
 		}
 	}
 	
-	const nodeindx2outputvals = new Array(N);
-	nodeindx2outputvals.fill(null);
 	/*for (let i = 0;  i < N;  ++i){
 		const node = rootnode.children[i];
 		const nodeindx = node.dataset.i|0;
@@ -591,8 +574,6 @@ document.getElementById("runbtn").addEventListener("click", () => {
 			nodeindx2outputvals[i] = null;
 	}*/
 	let changed_since_last_loop = true;
-	let next_expected_exe_flow_node_indx_indx = 0;
-	let next_expected_exe_flow_node_indx = exe_flow_node_indices[next_expected_exe_flow_node_indx_indx];
 	for (let max_iterations = 100;  (max_iterations!==0) && changed_since_last_loop;  --max_iterations){
 		changed_since_last_loop = false;
 		console.log("Beginning execution loop iteration");
@@ -623,7 +604,7 @@ document.getElementById("runbtn").addEventListener("click", () => {
 						} else {
 							// console.log("nodeindx2inputsourcenodes[i]",nodeindx2inputsourcenodes[i]);
 							// console.log("nodeindx2inputsourcenodes[i].filtered", nodeindx2inputsourcenodes[i].filter(x => (x[2] !== TYPE_INPUT) && (x[2] !== TYPE_EXECUTION)).map((x,j)=>[x,j]));
-							nodeindx2outputvals[i] = output_fn(node, nodeindx2inputsourcenodes[i].filter(x => (x[2] !== TYPE_INPUT) && (x[2] !== TYPE_EXECUTION)).map((x,j) => {
+							nodeindx2outputvals[i] = output_fn(node, nodeindx2inputsourcenodes[i].filter(x => (x[2] !== TYPE_INPUT)).map((x,j) => {
 								const [srcnode, srcline] = x;
 								return nodeindx2outputvals[srcnode][srcline];
 							}));
@@ -632,13 +613,19 @@ document.getElementById("runbtn").addEventListener("click", () => {
 						}
 						
 						if (i === next_expected_exe_flow_node_indx){
-							++next_expected_exe_flow_node_indx_indx;
-							if (next_expected_exe_flow_node_indx_indx === exe_flow_node_indices.length){
+							for (let edge of edges){
+								// const [srcnode, dstnode, srcline, dstline, pth] = edge;
+								if ((edge !== null) && (edge[0] === next_expected_exe_flow_node_indx) && (nodeindx2outputvals[i][edge[2]])){
+									next_expected_exe_flow_node_indx = edge[1];
+									break;
+								}
+							}
+							
+							if (next_expected_exe_flow_node_indx === i){
+								// i.e. no next node found
 								console.log("Successfully completed execution");
 								changed_since_last_loop = false;
 								break;
-							} else {
-								next_expected_exe_flow_node_indx = exe_flow_node_indices[next_expected_exe_flow_node_indx_indx];
 							}
 						}
 					}
