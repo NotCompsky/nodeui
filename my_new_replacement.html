@@ -148,6 +148,14 @@ node-circle {
 	--node-circle-cl: #0f0;
 	--node-circle-cl2: #000;
 }
+.vartype_strlist {
+	--node-circle-cl: #794acf;
+	--node-circle-cl2: #fff;
+}
+.vartype_intlist {
+	--node-circle-cl: #fc8c01;
+	--node-circle-cl2: #fff;
+}
 
 #edges_svg {
 	position:absolute;
@@ -193,7 +201,9 @@ const TYPE_FLOAT = 2;
 const TYPE_EXECUTION = 3;
 const TYPE_INPUT = 4;
 const TYPE_BOOL = 5;
-const vartype_enum2classname = ["vartype_text","vartype_int","vartype_float","vartype_execution",null,"vartype_bool"];
+const TYPE_STRLIST = 6;
+const TYPE_INTLIST = 7;
+const vartype_enum2classname = ["vartype_text","vartype_int","vartype_float","vartype_execution",null,"vartype_bool","vartype_strlist","vartype_intlist"];
 
 const rootnode = document.getElementById("nodescontainer");
 const edges_svg = document.getElementById("edges_svg");
@@ -212,6 +222,11 @@ const node_types = {
 	
 	"log":["Log",40,[[TYPE_EXECUTION,""],[TYPE_TEXT,""]],[[TYPE_EXECUTION,""]],(node,inputs)=>{console.log("LOGGING",inputs[0]);return [];}],
 	
+	"csv_str":["CSV (Strings)",180,[[TYPE_INPUT,""]],[[TYPE_STRLIST,""]],(node,inputs)=>[get_input_value(node).split(",")]],
+	"csv_int":["CSV (Integers)",180,[[TYPE_INPUT,""]],[[TYPE_INTLIST,""]],(node,inputs)=>[get_input_value(node).split(",").map(x => x|0)]],
+	"contains_str":["Contains",40,[[TYPE_STRLIST,""],[TYPE_TEXT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0].includes(inputs[1])]],
+	"contains_int":["Contains",40,[[TYPE_INTLIST,""],[TYPE_INT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0].includes(inputs[1])]],
+	
 	"or":["OR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]||inputs[1]]],
 	"and":["AND",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]&&inputs[1]]],
 	"xor":["XOR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]!==inputs[1]]],
@@ -219,6 +234,7 @@ const node_types = {
 	
 	"int+int":["+",120,[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,""]],(node,inputs)=>[inputs[0]+inputs[1]]],
 	"int->str":["toString",120,[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
+	"bool->str":["toString",40,[[TYPE_BOOL,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
 	"concat":["concat",120,[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].concat(inputs[1])]],
 };
 
@@ -367,7 +383,7 @@ const deserialise_all_nodes = metas => {
 		}
 	}
 };
-deserialise_all_nodes(JSON.parse('[[["int",234,93],["int+int",434,216],["int->str",572,109],["concat",776,97],["int+int",431,96],["exe",309,-7],["log",805,-10],["log",1018,-13]],[[0,4,1,0],[5,6,0,0],[4,2,0,0],[2,3,0,0],[2,6,0,1],[6,7,0,0],[3,7,0,1],[2,3,0,1]],["1"]]'));
+deserialise_all_nodes(JSON.parse('[[["int",240,201],["int+int",1023,240],["int->str",523,198],["concat",667,131],["int+int",381,187],["exe",326,50],["log",813,60],["log",963,62],["str",245,113],["csv_int",242,387],["contains_int",554,344],["bool->str",649,331],["str",264,301],["concat",730,302]],[[0,4,0,0],[0,4,0,1],[5,6,0,0],[4,2,0,0],[6,7,0,0],[2,3,0,1],[8,3,0,0],[3,6,0,1],[9,10,0,0],[10,11,0,0],[12,13,0,0],[11,13,0,1],[0,10,0,1],[13,7,0,1]],["2","The number is ","1,2","Int in list? "]]'));
 
 const graph__transformation_matrix = [1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0];
 let graph_canvas_width__physical = 0;
