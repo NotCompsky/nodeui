@@ -224,24 +224,25 @@ const node_types = {
 	
 	"csv_str":["CSV (Strings)",180,[[TYPE_INPUT,""]],[[TYPE_STRLIST,""]],(node,inputs)=>[get_input_value(node).split(",")]],
 	"csv_int":["CSV (Integers)",180,[[TYPE_INPUT,""]],[[TYPE_INTLIST,""]],(node,inputs)=>[get_input_value(node).split(",").map(x => x|0)]],
-	"contains_str":["Contains",40,[[TYPE_STRLIST,""],[TYPE_TEXT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0].includes(inputs[1])]],
-	"contains_int":["Contains",40,[[TYPE_INTLIST,""],[TYPE_INT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0].includes(inputs[1])]],
+	"contains_str":["Contains",60,[[TYPE_STRLIST,""],[TYPE_TEXT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0].includes(inputs[1])]],
+	"contains_int":["Contains",60,[[TYPE_INTLIST,""],[TYPE_INT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0].includes(inputs[1])]],
 	
 	"or":["OR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]||inputs[1]]],
 	"and":["AND",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]&&inputs[1]]],
 	"xor":["XOR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]!==inputs[1]]],
 	"not":["NOT",40,[[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[!inputs[0]]],
 	
-	"int+int":["+",120,[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,""]],(node,inputs)=>[inputs[0]+inputs[1]]],
-	"int->str":["toString",120,[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
-	"bool->str":["toString",40,[[TYPE_BOOL,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
-	"concat":["concat",120,[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].concat(inputs[1])]],
+	"int+int":["+",20,[[TYPE_INT,""],[TYPE_INT,""]],[[TYPE_INT,""]],(node,inputs)=>[inputs[0]+inputs[1]]],
+	"int->str":["toString",50,[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
+	"bool->str":["toString",50,[[TYPE_BOOL,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
+	"concat":["concat",60,[[TYPE_TEXT,""],[TYPE_TEXT,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].concat(inputs[1])]],
 };
 
 const node_coords = [];
 const edges = [];
 const nodeindx2inputsourcenodes = [];
 const all_execution_flow_nodes = [];
+const node2typename = [];
 const create_node = (node_type_name, x, y) => {
 	const [title, node_w, input_vars, outputs, output_fn] = node_types[node_type_name];
 	
@@ -320,6 +321,7 @@ const create_node = (node_type_name, x, y) => {
 	}
 	
 	node_coords.push(x,y,node_w);
+	node2typename.push(node_type_name);
 	nodeindx2inputsourcenodes.push(input_vars.map(x => (x[0]===TYPE_INPUT)?[null,null,TYPE_INPUT]:null));
 	
 	set_css_var(node, "--dx", x+"px");
@@ -350,7 +352,7 @@ const serialise_all_nodes = () => {
 	const nodeindx2meta = [];
 	for (let node of rootnode.children){
 		const nodeindx = node.dataset.i|0;
-		nodeindx2meta.push([nodeindx, node, node.dataset.typename, node_coords[3*nodeindx], node_coords[3*nodeindx+1]]);
+		nodeindx2meta.push([nodeindx, node, node2typename[nodeindx], node_coords[3*nodeindx], node_coords[3*nodeindx+1]]);
 	}
 	const oldnodeindx2newnodeindx = {};
 	const newnodes = [];
@@ -516,7 +518,7 @@ document.getElementById("runbtn").addEventListener("click", () => {
 	// WARNING: Assuming there is exactly 1 'exe' node
 	const exe_flow_node_indices = [];
 	for (let i of all_execution_flow_nodes){
-		if (rootnode.children[i].dataset.typename === "exe"){
+		if (node2typename[i] === "exe"){
 			// The idea is that the 'exe' node is a function's start, and the sum inputs of its execution flow are the function's parameters, and (TODO) the function can return values
 			// NOTE: atm I assume no node has multiple exec inputs/outputs. If they did, that would presumably be some kind of parallel processing.
 			
@@ -578,7 +580,7 @@ document.getElementById("runbtn").addEventListener("click", () => {
 					if ((!all_execution_flow_nodes.includes(i)) || (i === next_expected_exe_flow_node_indx)){
 						const node = rootnode.children[i];
 						
-						const [title, node_w, input_vars, outputs, output_fn] = node_types[node.dataset.typename];
+						const [title, node_w, input_vars, outputs, output_fn] = node_types[node2typename[i]];
 						
 						// console.log(node, title, outputs);
 						if (output_fn === null){
