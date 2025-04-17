@@ -164,9 +164,9 @@ const set_css_var = (node, name, value) =>
 ;
 
 const node_types = {
-	"int+int":["+",120,[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,"c"]],(a,b)=>a+b],
-	"int->str":["toString",120,[[TYPE_INT,"a"]],[[TYPE_TEXT,"b"]],(a)=>b.toString()],
-	"concat":["concat",120,[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,"c"]],(a,b)=>a.concat(b)],
+	"int+int":["+",120,[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,"c"]],(node,inputs)=>inputs[0]+inputs[1]],
+	"int->str":["toString",120,[[TYPE_INT,"a"]],[[TYPE_TEXT,"b"]],(node,inputs)=>inputs[0].toString()],
+	"concat":["concat",120,[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,"c"]],(node,inputs)=>inputs[0].concat(inputs[1])],
 };
 
 const node_coords = [];
