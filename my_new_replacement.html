@@ -178,12 +178,16 @@ node-circle {
 		<button id="runbtn">Run</button><br>
 		<p><b>To detach edge</b>: Click and press 'delete'</p>
 		<p><b>To detach node</b>: Click and press 'delete'</p>
+		<p><b>NOTE for developer of this program</b>: Any node that has a state-affecting action should be in the execution flow, so that its action is executed in the correct order.</p>
 	</details>
 	<script>
+// NOTE: All inputs are treated the same at all times, including the 'execution flow' inputs, which are only filtered out before feeding input values into the output_fn
+
 const TYPE_TEXT = 0;
 const TYPE_INT = 1;
 const TYPE_FLOAT = 2;
 const TYPE_EXECUTION = 3;
+const TYPE_INPUT = 4;
 const vartype_enum2classname = ["vartype_text","vartype_int","vartype_float","vartype_execution"];
 
 const rootnode = document.getElementById("nodescontainer");
@@ -197,28 +201,31 @@ const get_input_value = (node, inputs) => {
 };
 
 const node_types = {
-	"int":["Integer",120,[{"vartype":TYPE_INT,"type":"number","step":"1"}],[],[[TYPE_INT,""]],get_input_value],
-	"str":["String",120,[{"vartype":TYPE_TEXT,"type":"text"}],[],[[TYPE_TEXT,""]],get_input_value],
-	"exe":["Exec",40,[],[],[[TYPE_EXECUTION,""]],null],
+	"int":["Integer",120,[[TYPE_INPUT,{"vartype":TYPE_INT,"type":"number","step":"1"}]],[[TYPE_INT,""]],(node,inputs)=>[get_input_value(node)|0]],
+	"str":["String",120,[[TYPE_INPUT,{"vartype":TYPE_TEXT,"type":"text"}]],[[TYPE_TEXT,""]],node=>[get_input_value(node)]],
+	"exe":["Exec",40,[],[[TYPE_EXECUTION,""]],null],
 	
-	"log":["Log",40,[],[[TYPE_EXECUTION,""],[TYPE_TEXT,""]],[[TYPE_EXECUTION,""]],(node,inputs)=>console.log(inputs[0])],
+	"log":["Log",40,[[TYPE_EXECUTION,""],[TYPE_TEXT,""]],[[TYPE_EXECUTION,""]],(node,inputs)=>{console.log("LOGGING",inputs[0]);return [];}],
 	
-	"int+int":["+",120,[],[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,""]],(node,inputs)=>inputs[0]+inputs[1]],
-	"int->str":["toString",120,[],[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>inputs[0].toString()],
-	"concat":["concat",120,[],[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,""]],(node,inputs)=>inputs[0].concat(inputs[1])],
+	"int+int":["+",120,[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,""]],(node,inputs)=>[inputs[0]+inputs[1]]],
+	"int->str":["toString",120,[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
+	"concat":["concat",120,[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].concat(inputs[1])]],
 };
 
 const node_coords = [];
 const edges = [];
+const nodeindx2inputsourcenodes = [];
+const all_execution_flow_nodes = [];
 const create_node = (node_type_name, x, y) => {
-	const [title, node_w, input_nodes, input_vars, outputs, output_fn] = node_types[node_type_name];
+	const [title, node_w, input_vars, outputs, output_fn] = node_types[node_type_name];
 	
 	const node = document.createElement("node-node");
 	node.dataset.typename = node_type_name;
 	node.setAttribute("tabindex", "0");
-	node.dataset.i = node_coords.length / 3;
+	const nodeindx = node_coords.length / 3;
+	node.dataset.i = nodeindx;
 	node.classList.add("node");
-	if (input_vars.length === 0){
+	if (input_vars.filter(x => x[0] !== TYPE_INPUT).length === 0){ // TODO: Optimise
 		node.classList.add("sourcenode");
 	} else if (outputs.length === 0){
 		node.classList.add("exitnode");
@@ -233,41 +240,40 @@ const create_node = (node_type_name, x, y) => {
 	node_contents.classList.add("node_contents");
 	node.appendChild(node_contents);
 	
-	for (let metas of input_nodes){
-		const row = document.createElement("node-unclickable");
-		row.classList.add("node_row");
-		
-				const input = document.createElement("input");
-				for (let [key,val] of Object.entries(metas)){
-					if (key !== "vartype")
-						input.setAttribute(key, val);
-				}
-				input.setAttribute("required", "true");
-				input.classList.add("node_row_col");
-				input.classList.add("node_input");
-				input.classList.add(vartype_enum2classname[metas["vartype"]]);
-				
-				row.appendChild(input);
-		node_contents.appendChild(row);
-	}
-	
 	for (let i = 0, M = input_vars.length, N = outputs.length;  (i < M)||(i < N);  ++i){
 		const row = document.createElement("node-unclickable");
 		row.classList.add("node_row");
 		
-		for (let j = 3;  j < 5;  ++j){
+		for (let j = 2;  j < 4;  ++j){
+			// console.log(j, node_types[node_type_name][j]);
 			if (i < node_types[node_type_name][j].length){
 				const [vartype, labelstr] = node_types[node_type_name][j][i];
 				
+				if (vartype === TYPE_EXECUTION)
+					all_execution_flow_nodes.push(nodeindx);
+				
+				if (vartype === TYPE_INPUT){
+					const input = document.createElement("input");
+					for (let [key,val] of Object.entries(labelstr)){
+						if (key !== "vartype")
+							input.setAttribute(key, val);
+					}
+					input.setAttribute("required", "true");
+					input.classList.add("node_row_col");
+					input.classList.add("node_input");
+					input.classList.add(vartype_enum2classname[labelstr["vartype"]]);
+					
+					row.appendChild(input);
+				} else {
 				const item = document.createElement("node-unclickable");
 				item.classList.add("node_row_col");
-				item.classList.add(["node_input","node_output"][j-3]);
+				item.classList.add(["node_input","node_output"][j-2]);
 				
 				const circle = document.createElement("node-circle");
 				circle.setAttribute("tabindex", "0");
-				circle.dataset.iotype = ["node_input","node_output"][j-3];
+				circle.dataset.iotype = ["node_input","node_output"][j-2];
 				circle.dataset.vartype = vartype;
-				circle.dataset.line_num = i + input_nodes.length;
+				circle.dataset.line_num = i;
 				item.appendChild(circle);
 				
 				if (labelstr !== ""){
@@ -280,6 +286,7 @@ const create_node = (node_type_name, x, y) => {
 				item.classList.add(vartype_enum2classname[vartype]);
 				
 				row.appendChild(item);
+				}
 			}
 		}
 		
@@ -287,6 +294,7 @@ const create_node = (node_type_name, x, y) => {
 	}
 	
 	node_coords.push(x,y,node_w);
+	nodeindx2inputsourcenodes.push(input_vars.map(x => (x[0]===TYPE_INPUT)?[null,null,TYPE_INPUT]:null));
 	
 	set_css_var(node, "--dx", x+"px");
 	set_css_var(node, "--dy", y+"px");
@@ -302,10 +310,13 @@ const set_pth_coords = edge_indx => {
 	const y2 = node_coords[(node2_indx*3) + 1];
 	pth.setAttributeNS(null, "d", `M${x1},${y1+36+24*linenum1} L${x2},${y2+36+24*linenum2}`);
 };
-const create_edge = (srcnode, dstnode, srcline, dstline) => {
+const create_edge = (srcnode, dstnode, srcline, dstline, vartype) => {
 	const pth = document.createElementNS("http://www.w3.org/2000/svg", "path");
 	pth.setAttributeNS(null, "tabindex", "0");
 	edges.push([srcnode, dstnode, srcline, dstline, pth]);
+	
+	nodeindx2inputsourcenodes[dstnode][dstline] = [srcnode,srcline,vartype]; // WARNING: Assumes no <input> elements on nodes with non-<input> inputs
+	
 	set_pth_coords(edges.length - 1);
 	edges_svg.appendChild(pth);
 };
@@ -336,7 +347,9 @@ const deserialise_all_nodes = metas => {
 	for (let [typename, x, y] of metas[0])
 		create_node(typename, x, y);
 	for (let [srcnode, dstnode, srcline, dstline] of metas[1]){
-		create_edge(srcnode, dstnode, srcline, dstline);
+		const nodetypename = metas[0][srcnode][0];
+		const vartype = node_types[nodetypename][3][srcline][0];
+		create_edge(srcnode, dstnode, srcline, dstline, vartype);
 	}
 	for (let i = 0, node_indx = 0;  i < metas[2].length;  ++node_indx){
 		for (let inp of rootnode.children[node_indx].getElementsByTagName("input")){
@@ -450,7 +463,7 @@ document.documentElement.addEventListener("pointerup", eventobj => {
 				}
 				
 				if (output_has_no_prev_input)
-					create_edge(src_indx, dst_indx, src_line, dst_line);
+					create_edge(src_indx, dst_indx, src_line, dst_line, target.dataset.vartype|0);
 			}
 			}
 			break;
@@ -460,7 +473,109 @@ document.documentElement.addEventListener("pointerup", eventobj => {
 });
 
 document.getElementById("runbtn").addEventListener("click", () => {
-	alert("TODO");
+	const N = rootnode.children.length;
+	/*if (N !== nodeindx2inputsourcenodes.length){
+		throw Error(`${nodeindx2inputsourcenodes} == nodeindx2inputsourcenodes.length != rootnode.children.length == ${N}`);
+	}*/
+	
+	// WARNING: Assuming there is exactly 1 'exe' node
+	const exe_flow_node_indices = [];
+	for (let i of all_execution_flow_nodes){
+		if (rootnode.children[i].dataset.typename === "exe"){
+			// The idea is that the 'exe' node is a function's start, and the sum inputs of its execution flow are the function's parameters, and (TODO) the function can return values
+			// NOTE: atm I assume no node has multiple exec inputs/outputs. If they did, that would presumably be some kind of parallel processing.
+			
+			// NOTE: 'exe' node has no inputs, so this code cannot loop
+			let prev_flow_node_indx = i;
+			while(true){
+				exe_flow_node_indices.push(prev_flow_node_indx);
+				for (let edge of edges){
+					if (edge[0] === prev_flow_node_indx){
+						prev_flow_node_indx = edge[1];
+						break;
+					}
+				}
+				
+				if (prev_flow_node_indx === exe_flow_node_indices[exe_flow_node_indices.length-1])
+					// i.e. no next node found
+					break;
+			}
+			break;
+		}
+	}
+	
+	const nodeindx2outputvals = new Array(N);
+	nodeindx2outputvals.fill(null);
+	/*for (let i = 0;  i < N;  ++i){
+		const node = rootnode.children[i];
+		const nodeindx = node.dataset.i|0;
+		let n_unattached_node_inputs = node_types[node.dataset.typename][2].length;
+		for (let edge of edges){
+			if (edge[1] === nodeindx){
+				--n_unattached_node_inputs;
+				if (n_unattached_node_inputs === 0)
+					break;
+			}
+		}
+		if (n_unattached_node_inputs === 0)
+			nodeindx2outputvals[i] = null;
+	}*/
+	let changed_since_last_loop = true;
+	let next_expected_exe_flow_node_indx_indx = 0;
+	let next_expected_exe_flow_node_indx = exe_flow_node_indices[next_expected_exe_flow_node_indx_indx];
+	for (let max_iterations = 100;  (max_iterations!==0) && changed_since_last_loop;  --max_iterations){
+		changed_since_last_loop = false;
+		console.log("Beginning execution loop iteration");
+		for (let i = 0;  i < N;  ++i){
+			if (nodeindx2outputvals[i] === null){
+				let all_inputs_done = true;
+				console.log(rootnode.children[i]);
+				// console.log(`nodeindx2inputsourcenodes[${i}]`, JSON.stringify(nodeindx2inputsourcenodes[i]));
+				// console.log(nodeindx2inputsourcenodes.map(x => (x===null)?"NULL":(x[0]===null?"x[0]==NULL":"x[0]=="+x[0])));
+				for (let thing of nodeindx2inputsourcenodes[i]){
+					all_inputs_done &&= (thing !== null) && (
+						(thing[0] === null) || // <input>
+						(nodeindx2outputvals[thing[0]] !== null)
+					);
+				}
+				// console.log(`all_inputs_done[${i}]`, all_inputs_done);
+				if (all_inputs_done){
+					if ((!all_execution_flow_nodes.includes(i)) || (i === next_expected_exe_flow_node_indx)){
+						const node = rootnode.children[i];
+						
+						const [title, node_w, input_vars, outputs, output_fn] = node_types[node.dataset.typename];
+						
+						// console.log(node, title, outputs);
+						if (output_fn === null){
+							// probably execution flow node
+							nodeindx2outputvals[i] = [];
+							changed_since_last_loop = true;
+						} else {
+							// console.log("nodeindx2inputsourcenodes[i]",nodeindx2inputsourcenodes[i]);
+							// console.log("nodeindx2inputsourcenodes[i].filtered", nodeindx2inputsourcenodes[i].filter(x => (x[2] !== TYPE_INPUT) && (x[2] !== TYPE_EXECUTION)).map((x,j)=>[x,j]));
+							nodeindx2outputvals[i] = output_fn(node, nodeindx2inputsourcenodes[i].filter(x => (x[2] !== TYPE_INPUT) && (x[2] !== TYPE_EXECUTION)).map((x,j) => {
+								const [srcnode, srcline] = x;
+								return nodeindx2outputvals[srcnode][srcline];
+							}));
+							console.log(`Node ${i} => ${nodeindx2outputvals[i]}`);
+							changed_since_last_loop = true;
+						}
+						
+						if (i === next_expected_exe_flow_node_indx){
+							++next_expected_exe_flow_node_indx_indx;
+							if (next_expected_exe_flow_node_indx_indx === exe_flow_node_indices.length){
+								console.log("Successfully completed execution");
+								changed_since_last_loop = false;
+								break;
+							} else {
+								next_expected_exe_flow_node_indx = exe_flow_node_indices[next_expected_exe_flow_node_indx_indx];
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 });
 	</script>
 </body>
