@@ -202,6 +202,7 @@ const create_node = (node_type_name, x, y) => {
 				const circle = document.createElement("node-circle");
 				circle.dataset.iotype = ["node_input","node_output"][j-2];
 				circle.dataset.vartype = vartype;
+				circle.dataset.line_num = i;
 				item.appendChild(circle);
 				
 				const label = document.createElement("node-unclickable");
@@ -288,12 +289,12 @@ document.documentElement.addEventListener("pointerdown", eventobj => {
 	}
 });
 const set_pth_coords = edge_indx => {
-	const [node1_indx, node2_indx, pth] = edges[edge_indx];
+	const [node1_indx, node2_indx, linenum1, linenum2, pth] = edges[edge_indx];
 	const x1 = node_coords[node1_indx*3];
 	const y1 = node_coords[(node1_indx*3) + 1];
 	const x2 = node_coords[node2_indx*3] + node_coords[node2_indx*3 + 2];
 	const y2 = node_coords[(node2_indx*3) + 1];
-	pth.setAttributeNS(null, "d", `M${x1},${y1} L${x2},${y2}`);
+	pth.setAttributeNS(null, "d", `M${x1},${y1+36+24*linenum1} L${x2},${y2+36+24*linenum2}`);
 }
 document.documentElement.addEventListener("pointermove", eventobj => {
 	const target = eventobj.target;
@@ -321,9 +322,9 @@ document.documentElement.addEventListener("pointerup", eventobj => {
 				const pth = document.createElementNS("http://www.w3.org/2000/svg", "path");
 				
 				if (currently_dragging_nodecircle.dataset.iotype === "node_input")
-					edges.push([node1.dataset.i|0, node2.dataset.i|0, pth]);
+					edges.push([node1.dataset.i|0, node2.dataset.i|0, currently_dragging_nodecircle.dataset.line_num|0, target.dataset.line_num|0, pth]);
 				else
-					edges.push([node2.dataset.i|0, node1.dataset.i|0, pth]);
+					edges.push([node2.dataset.i|0, node1.dataset.i|0, target.dataset.line_num|0, currently_dragging_nodecircle.dataset.line_num|0, pth]);
 				
 				set_pth_coords(edges.length - 1);
 				edges_svg.appendChild(pth);
