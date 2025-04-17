@@ -56,6 +56,7 @@ body {
 	
 	border:1px solid var(--node-theme-cl);
 	
+	text-align:center;
 	color:#fff;
 	background-color:#1f2937;
 	border-radius:calc(var(--P0) * 5px);
@@ -112,7 +113,10 @@ node-circle {
 	justify-content:flex-end;
 }
 
-.mathnode {
+.sourcenode {
+	--node-theme-cl:red;
+}
+.exitnode {
 	--node-theme-cl:blue;
 }
 .vartype_text {
@@ -137,10 +141,17 @@ node-circle {
 	pointer-events:none;
 }
 
-#runbtn {
+#controlscontainer {
 	position:fixed;
 	top:0;
 	right:0;
+	color:#fff;
+}
+
+:focus {
+	border:3px solid yellow;
+	stroke:yellow;
+	stroke-width:3;
 }
 	</style>
 </head>
@@ -149,7 +160,12 @@ node-circle {
 		<div id="nodescontainer"></div>
 		<svg id="edges_svg"></svg>
 	</div>
-	<button id="runbtn">Run</button>
+	<details id="controlscontainer">
+		<summary>Controls</summary>
+		<button id="runbtn">Run</button><br>
+		<p><b>To detach edge</b>: Click and press 'delete'</p>
+		<p><b>To detach node</b>: Click and press 'delete'</p>
+	</details>
 	<script>
 const TYPE_TEXT = 0;
 const TYPE_INT = 1;
@@ -175,8 +191,14 @@ const create_node = (node_type_name, x, y) => {
 	const [title, node_w, inputs, outputs] = node_types[node_type_name];
 	
 	const node = document.createElement("node-node");
+	node.setAttribute("tabindex", "0");
 	node.dataset.i = node_coords.length / 3;
 	node.classList.add("node");
+	if (inputs.length === 0){
+		node.classList.add("sourcenode");
+	} else if (outputs.length === 0){
+		node.classList.add("exitnode");
+	}
 	
 	const node_title = document.createElement("node-unclickable");
 	node_title.classList.add("node_title");
@@ -200,6 +222,7 @@ const create_node = (node_type_name, x, y) => {
 				item.classList.add(["node_input","node_output"][j-2]);
 				
 				const circle = document.createElement("node-circle");
+				circle.setAttribute("tabindex", "0");
 				circle.dataset.iotype = ["node_input","node_output"][j-2];
 				circle.dataset.vartype = vartype;
 				circle.dataset.line_num = i;
@@ -281,6 +304,7 @@ document.documentElement.addEventListener("pointerdown", eventobj => {
 			currently_dragging_node = target;
 			while(currently_dragging_node.tagName !== "NODE-NODE")
 				currently_dragging_node = currently_dragging_node.parentNode;
+			currently_dragging_node.focus();
 			
 			const node_indx = currently_dragging_node.dataset.i|0;
 			clickorigin_x = node_coords[node_indx*3] - eventobj.clientX;
@@ -320,6 +344,7 @@ document.documentElement.addEventListener("pointerup", eventobj => {
 			const node2 = target.parentNode.parentNode.parentNode.parentNode;
 			if ((target !== currently_dragging_nodecircle) && (target.dataset.iotype !== currently_dragging_nodecircle.dataset.iotype) && (node1 !== node2) && (target.dataset.vartype === currently_dragging_nodecircle.dataset.vartype)){
 				const pth = document.createElementNS("http://www.w3.org/2000/svg", "path");
+				pth.setAttributeNS(null, "tabindex", "0");
 				
 				if (currently_dragging_nodecircle.dataset.iotype === "node_input")
 					edges.push([node1.dataset.i|0, node2.dataset.i|0, currently_dragging_nodecircle.dataset.line_num|0, target.dataset.line_num|0, pth]);
