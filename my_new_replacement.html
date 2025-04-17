@@ -46,6 +46,15 @@ body {
 	position:absolute;
 	transform:matrix(var(--P0), 0, 0, var(--P5), var(--P12), var(--P13));
 }
+.node, input.node_input {
+	width:calc(var(--P0) * var(--node-w) - var(--P0) * 1em);
+	font-size:0.75em;
+}
+input:invalid {
+	background-color: ivory;
+	border: none;
+	outline: calc(var(--P0) * 2px) solid red;
+}
 .node {
 	transform:translate(calc(var(--P0) * var(--dx,0) + 1px * var(--P12)), calc(var(--P5) * var(--dy,0) + 1px * var(--P13)));
 	position:absolute;
@@ -178,23 +187,29 @@ const edges_svg = document.getElementById("edges_svg");
 const set_css_var = (node, name, value) =>
 	node.style.setProperty(name, value)
 ;
+const get_input_value = (node, inputs) => {
+	return node.getElementsByTagName("input")[0].value;
+};
 
 const node_types = {
-	"int+int":["+",120,[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,"c"]],(node,inputs)=>inputs[0]+inputs[1]],
-	"int->str":["toString",120,[[TYPE_INT,"a"]],[[TYPE_TEXT,"b"]],(node,inputs)=>inputs[0].toString()],
-	"concat":["concat",120,[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,"c"]],(node,inputs)=>inputs[0].concat(inputs[1])],
+	"int":["Integer",120,[{"vartype":TYPE_INT,"type":"number","step":"1"}],[],[[TYPE_INT,""]],get_input_value],
+	"str":["String",120,[{"vartype":TYPE_TEXT,"type":"text"}],[],[[TYPE_TEXT,""]],get_input_value],
+	
+	"int+int":["+",120,[],[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,""]],(node,inputs)=>inputs[0]+inputs[1]],
+	"int->str":["toString",120,[],[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>inputs[0].toString()],
+	"concat":["concat",120,[],[[TYPE_TEXT,"a"],[TYPE_TEXT,"b"]],[[TYPE_TEXT,""]],(node,inputs)=>inputs[0].concat(inputs[1])],
 };
 
 const node_coords = [];
 const edges = [];
 const create_node = (node_type_name, x, y) => {
-	const [title, node_w, inputs, outputs] = node_types[node_type_name];
+	const [title, node_w, input_nodes, input_vars, outputs, output_fn] = node_types[node_type_name];
 	
 	const node = document.createElement("node-node");
 	node.setAttribute("tabindex", "0");
 	node.dataset.i = node_coords.length / 3;
 	node.classList.add("node");
-	if (inputs.length === 0){
+	if (input_vars.length === 0){
 		node.classList.add("sourcenode");
 	} else if (outputs.length === 0){
 		node.classList.add("exitnode");
@@ -209,29 +224,49 @@ const create_node = (node_type_name, x, y) => {
 	node_contents.classList.add("node_contents");
 	node.appendChild(node_contents);
 	
-	for (let i = 0, M = inputs.length, N = outputs.length;  (i < M)||(i < N);  ++i){
+	for (let metas of input_nodes){
 		const row = document.createElement("node-unclickable");
 		row.classList.add("node_row");
 		
-		for (let j = 2;  j < 4;  ++j){
+				const input = document.createElement("input");
+				for (let [key,val] of Object.entries(metas)){
+					if (key !== "vartype")
+						input.setAttribute(key, val);
+				}
+				input.setAttribute("required", "true");
+				input.classList.add("node_row_col");
+				input.classList.add("node_input");
+				input.classList.add(vartype_enum2classname[metas["vartype"]]);
+				
+				row.appendChild(input);
+		node_contents.appendChild(row);
+	}
+	
+	for (let i = 0, M = input_vars.length, N = outputs.length;  (i < M)||(i < N);  ++i){
+		const row = document.createElement("node-unclickable");
+		row.classList.add("node_row");
+		
+		for (let j = 3;  j < 5;  ++j){
 			if (i < node_types[node_type_name][j].length){
 				const [vartype, labelstr] = node_types[node_type_name][j][i];
 				
 				const item = document.createElement("node-unclickable");
 				item.classList.add("node_row_col");
-				item.classList.add(["node_input","node_output"][j-2]);
+				item.classList.add(["node_input","node_output"][j-3]);
 				
 				const circle = document.createElement("node-circle");
 				circle.setAttribute("tabindex", "0");
-				circle.dataset.iotype = ["node_input","node_output"][j-2];
+				circle.dataset.iotype = ["node_input","node_output"][j-3];
 				circle.dataset.vartype = vartype;
-				circle.dataset.line_num = i;
+				circle.dataset.line_num = i + input_nodes.length;
 				item.appendChild(circle);
 				
-				const label = document.createElement("node-unclickable");
-				label.classList.add("node_circle_label");
-				label.innerText = labelstr;
-				item.appendChild(label);
+				if (labelstr !== ""){
+					const label = document.createElement("node-unclickable");
+					label.classList.add("node_circle_label");
+					label.innerText = labelstr;
+					item.appendChild(label);
+				}
 				
 				item.classList.add(vartype_enum2classname[vartype]);
 				
