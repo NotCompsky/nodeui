@@ -140,6 +140,10 @@ node-circle {
 	--node-circle-cl: #cce82d;
 	--node-circle-cl2: #000;
 }
+.vartype_execution {
+	--node-circle-cl: #ff0;
+	--node-circle-cl2: #ff0;
+}
 
 #edges_svg {
 	position:absolute;
@@ -179,7 +183,8 @@ node-circle {
 const TYPE_TEXT = 0;
 const TYPE_INT = 1;
 const TYPE_FLOAT = 2;
-const vartype_enum2classname = ["vartype_text","vartype_int","vartype_float"];
+const TYPE_EXECUTION = 3;
+const vartype_enum2classname = ["vartype_text","vartype_int","vartype_float","vartype_execution"];
 
 const rootnode = document.getElementById("nodescontainer");
 const edges_svg = document.getElementById("edges_svg");
@@ -194,6 +199,9 @@ const get_input_value = (node, inputs) => {
 const node_types = {
 	"int":["Integer",120,[{"vartype":TYPE_INT,"type":"number","step":"1"}],[],[[TYPE_INT,""]],get_input_value],
 	"str":["String",120,[{"vartype":TYPE_TEXT,"type":"text"}],[],[[TYPE_TEXT,""]],get_input_value],
+	"exe":["Exec",40,[],[],[[TYPE_EXECUTION,""]],null],
+	
+	"log":["Log",40,[],[[TYPE_EXECUTION,""],[TYPE_TEXT,""]],[[TYPE_EXECUTION,""]],(node,inputs)=>console.log(inputs[0])],
 	
 	"int+int":["+",120,[],[[TYPE_INT,"a"],[TYPE_INT,"b"]],[[TYPE_INT,""]],(node,inputs)=>inputs[0]+inputs[1]],
 	"int->str":["toString",120,[],[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>inputs[0].toString()],
