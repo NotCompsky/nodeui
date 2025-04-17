@@ -206,6 +206,7 @@ const create_node = (node_type_name, x, y) => {
 	const [title, node_w, input_nodes, input_vars, outputs, output_fn] = node_types[node_type_name];
 	
 	const node = document.createElement("node-node");
+	node.dataset.typename = node_type_name;
 	node.setAttribute("tabindex", "0");
 	node.dataset.i = node_coords.length / 3;
 	node.classList.add("node");
@@ -285,10 +286,47 @@ const create_node = (node_type_name, x, y) => {
 	
 	rootnode.appendChild(node);
 };
-create_node("int+int", -10, -1);
-create_node("int->str", 50, 50);
-create_node("concat", 100, 50);
-create_node("int+int", 100, 100);
+const set_pth_coords = edge_indx => {
+	const [node1_indx, node2_indx, linenum1, linenum2, pth] = edges[edge_indx];
+	const x1 = node_coords[node1_indx*3] + node_coords[node1_indx*3 + 2];
+	const y1 = node_coords[(node1_indx*3) + 1];
+	const x2 = node_coords[node2_indx*3];
+	const y2 = node_coords[(node2_indx*3) + 1];
+	pth.setAttributeNS(null, "d", `M${x1},${y1+36+24*linenum1} L${x2},${y2+36+24*linenum2}`);
+};
+const create_edge = (srcnode, dstnode, srcline, dstline) => {
+	const pth = document.createElementNS("http://www.w3.org/2000/svg", "path");
+	pth.setAttributeNS(null, "tabindex", "0");
+	edges.push([srcnode, dstnode, srcline, dstline, pth]);
+	set_pth_coords(edges.length - 1);
+	edges_svg.appendChild(pth);
+};
+const serialise_all_nodes = () => {
+	const nodeindx2meta = [];
+	for (let node of rootnode.children){
+		const nodeindx = node.dataset.i|0;
+		nodeindx2meta.push([nodeindx, node.dataset.typename, node_coords[3*nodeindx], node_coords[3*nodeindx+1]]);
+	}
+	const oldnodeindx2newnodeindx = {};
+	const newnodes = [];
+	for (let i = 0, ls = nodeindx2meta.sort((a,b)=>b[0]<a[0]), N = ls.length;  i < N;  ++i){
+		const val = ls[i];
+		oldnodeindx2newnodeindx[val[0]] = i;
+		newnodes.push(val.slice(1));
+	}
+	return JSON.stringify([
+		newnodes,
+		edges.map(x => [oldnodeindx2newnodeindx[x[0]],oldnodeindx2newnodeindx[x[1]],x[2],x[3]])
+	]);
+};
+const deserialise_all_nodes = metas => {
+	for (let [typename, x, y] of metas[0])
+		create_node(typename, x, y);
+	for (let [srcnode, dstnode, srcline, dstline] of metas[1]){
+		create_edge(srcnode, dstnode, srcline, dstline);
+	}
+};
+deserialise_all_nodes(JSON.parse('[[["int",241,59],["int+int",464,139],["int->str",704,35],["concat",903,17],["int+int",456,23]],[[0,4,1,0]]]'));
 
 const graph__transformation_matrix = [1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0];
 let graph_canvas_width__physical = 0;
@@ -347,14 +385,6 @@ document.documentElement.addEventListener("pointerdown", eventobj => {
 			break;
 	}
 });
-const set_pth_coords = edge_indx => {
-	const [node1_indx, node2_indx, linenum1, linenum2, pth] = edges[edge_indx];
-	const x1 = node_coords[node1_indx*3];
-	const y1 = node_coords[(node1_indx*3) + 1];
-	const x2 = node_coords[node2_indx*3] + node_coords[node2_indx*3 + 2];
-	const y2 = node_coords[(node2_indx*3) + 1];
-	pth.setAttributeNS(null, "d", `M${x1},${y1+36+24*linenum1} L${x2},${y2+36+24*linenum2}`);
-}
 document.documentElement.addEventListener("pointermove", eventobj => {
 	const target = eventobj.target;
 	if (currently_dragging_node !== null){
@@ -372,22 +402,38 @@ document.documentElement.addEventListener("pointermove", eventobj => {
 	}
 });
 document.documentElement.addEventListener("pointerup", eventobj => {
-	const target = eventobj.target;
+	let target = eventobj.target;
 	switch (target.tagName){
 		case "NODE-CIRCLE":
+			if (currently_dragging_nodecircle !== null){
 			const node1 = currently_dragging_nodecircle.parentNode.parentNode.parentNode.parentNode;
 			const node2 = target.parentNode.parentNode.parentNode.parentNode;
 			if ((target !== currently_dragging_nodecircle) && (target.dataset.iotype !== currently_dragging_nodecircle.dataset.iotype) && (node1 !== node2) && (target.dataset.vartype === currently_dragging_nodecircle.dataset.vartype)){
-				const pth = document.createElementNS("http://www.w3.org/2000/svg", "path");
-				pth.setAttributeNS(null, "tabindex", "0");
+				let src_indx = node1.dataset.i|0;
+				let dst_indx = node2.dataset.i|0;
+				let src_line = currently_dragging_nodecircle.dataset.line_num|0;
+				let dst_line = target.dataset.line_num|0;
+				if (currently_dragging_nodecircle.dataset.iotype === "node_input"){
+					/*
+					let a = src_indx;
+					src_indx = dst_indx;
+					dst_indx = a;
+					
+					a = src_line;
+					src_line = dst_line;
+					dst_line = a;
+					*/
+					[src_indx, dst_indx, src_line, dst_line] = [dst_indx, src_indx, dst_line, src_line];
+				}
 				
-				if (currently_dragging_nodecircle.dataset.iotype === "node_input")
-					edges.push([node1.dataset.i|0, node2.dataset.i|0, currently_dragging_nodecircle.dataset.line_num|0, target.dataset.line_num|0, pth]);
-				else
-					edges.push([node2.dataset.i|0, node1.dataset.i|0, target.dataset.line_num|0, currently_dragging_nodecircle.dataset.line_num|0, pth]);
+				let output_has_no_prev_input = true;
+				for (let meta of edges){
+					output_has_no_prev_input &&= ((meta[1] !== dst_indx) || (meta[3] !== dst_line));
+				}
 				
-				set_pth_coords(edges.length - 1);
-				edges_svg.appendChild(pth);
+				if (output_has_no_prev_input)
+					create_edge(src_indx, dst_indx, src_line, dst_line);
+			}
 			}
 			break;
 	}
