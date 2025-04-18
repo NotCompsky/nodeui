@@ -446,6 +446,12 @@ const serialise_all_nodes_as_python = () => {
 	return py;
 };
 const deserialise_all_nodes = metas => {
+	node_coords.length = 0;
+	edges.length = 0;
+	nodeindx2inputsourcenodes.length = 0;
+	all_execution_flow_nodes.length = 0;
+	node2typename.length = 0;
+	
 	for (let [typename, x, y] of metas[0])
 		create_node(typename, x, y);
 	for (let [srcnode, dstnode, srcline, dstline] of metas[1]){
