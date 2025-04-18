@@ -276,11 +276,18 @@ const node_types = {
 	"contains_str":["Contains",60,[[TYPE_STRLIST,""],[TYPE_TEXT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0].includes(inputs[1])]],
 	"contains_int":["Contains",60,[[TYPE_INTLIST,""],[TYPE_INT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0].includes(inputs[1])]],
 	
+	"lt_int":["<",40,[[TYPE_INT,""],[TYPE_INT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]<inputs[1]]],
+	"gt_int":[">",40,[[TYPE_INT,""],[TYPE_INT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]>inputs[1]]],
+	"eq_int":["==",40,[[TYPE_INT,""],[TYPE_INT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]===inputs[1]]],
+	"eq_str":["==",40,[[TYPE_TEXT,""],[TYPE_TEXT,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]===inputs[1]]],
+	
 	"or":["OR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]||inputs[1]]],
 	"and":["AND",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]&&inputs[1]]],
 	"xor":["XOR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[inputs[0]!==inputs[1]]],
 	"not":["NOT",40,[[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[!inputs[0]]],
 	
+	"++":["++",30,[[TYPE_EXECUTION,""],[TYPE_INT,""]],[[TYPE_EXECUTION,""],[TYPE_INT,""]],(node,inputs)=>[inputs[0]+1]],
+	"--":["--",30,[[TYPE_EXECUTION,""],[TYPE_INT,""]],[[TYPE_EXECUTION,""],[TYPE_INT,""]],(node,inputs)=>[inputs[0]-1]],
 	"int+int":["+",20,[[TYPE_INT,""],[TYPE_INT,""]],[[TYPE_INT,""]],(node,inputs)=>[inputs[0]+inputs[1]]],
 	"int->str":["toString",50,[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
 	"bool->str":["toString",50,[[TYPE_BOOL,""]],[[TYPE_TEXT,""]],(node,inputs)=>[inputs[0].toString()]],
@@ -553,6 +560,42 @@ document.documentElement.addEventListener("pointermove", eventobj => {
 });
 document.documentElement.addEventListener("pointerup", eventobj => {
 	let target = eventobj.target;
+	if (target === rootnode){
+		selectnewnode_x = eventobj.clientX;
+		selectnewnode_y = eventobj.clientY;
+		if (currently_dragging_nodecircle === null){
+			for (let vartypename of vartype_enum2classname){
+				if (vartypename !== null){
+					selectnewnode.classList.add("newnode_input_"+vartypename);
+					selectnewnode.classList.add("newnode_output_"+vartypename);
+				}
+			}
+		} else {
+			const restrict_to_vartypename = vartype_enum2classname[currently_dragging_nodecircle.dataset.vartype];
+			for (let vartypename of vartype_enum2classname){
+				if (vartypename !== null){
+					if (vartypename === restrict_to_vartypename){
+						if (currently_dragging_nodecircle.dataset.iotype === "node_input"){
+							selectnewnode.classList.remove("newnode_input_"+vartypename);
+							selectnewnode.classList.add("newnode_output_"+vartypename);
+						} else {
+							selectnewnode.classList.add("newnode_input_"+vartypename);
+							selectnewnode.classList.remove("newnode_output_"+vartypename);
+						}
+					} else {
+						selectnewnode.classList.remove("newnode_input_"+vartypename);
+						selectnewnode.classList.remove("newnode_output_"+vartypename);
+					}
+				}
+			}
+		}
+		selectnewnode.style.left = eventobj.clientX+"px";
+		selectnewnode.style.top = eventobj.clientY+"px";
+		selectnewnode.classList.remove("hidden");
+		selectnewnode.showPicker();
+	} else {
+		selectnewnode.classList.add("hidden");
+	}
 	switch (target.tagName){
 		case "NODE-CIRCLE":
 			if (currently_dragging_nodecircle !== null){
@@ -593,42 +636,6 @@ document.documentElement.addEventListener("pointerup", eventobj => {
 				if (output_has_no_prev_input)
 					create_edge(src_indx, dst_indx, src_line, dst_line, target.dataset.vartype|0);
 			}
-			}
-			break;
-		case "DIV":
-			if (target === rootnode){
-				selectnewnode_x = eventobj.clientX;
-				selectnewnode_y = eventobj.clientY;
-				if (currently_dragging_nodecircle === null){
-					for (let vartypename of vartype_enum2classname){
-						if (vartypename !== null){
-							selectnewnode.classList.add("newnode_input_"+vartypename);
-							selectnewnode.classList.add("newnode_output_"+vartypename);
-						}
-					}
-				} else {
-					const restrict_to_vartypename = vartype_enum2classname[currently_dragging_nodecircle.dataset.vartype];
-					for (let vartypename of vartype_enum2classname){
-						if (vartypename !== null){
-							if (vartypename === restrict_to_vartypename){
-								if (currently_dragging_nodecircle.dataset.iotype === "node_input"){
-									selectnewnode.classList.remove("newnode_input_"+vartypename);
-									selectnewnode.classList.add("newnode_output_"+vartypename);
-								} else {
-									selectnewnode.classList.add("newnode_input_"+vartypename);
-									selectnewnode.classList.remove("newnode_output_"+vartypename);
-								}
-							} else {
-								selectnewnode.classList.remove("newnode_input_"+vartypename);
-								selectnewnode.classList.remove("newnode_output_"+vartypename);
-							}
-						}
-					}
-				}
-				selectnewnode.style.left = eventobj.clientX+"px";
-				selectnewnode.style.top = eventobj.clientY+"px";
-				selectnewnode.classList.remove("hidden");
-				selectnewnode.showPicker();
 			}
 			break;
 	}
