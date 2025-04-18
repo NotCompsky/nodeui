@@ -185,17 +185,24 @@ node-circle {
 		<div id="nodescontainer"></div>
 		<svg id="edges_svg"></svg>
 	</div>
-	<details id="controlscontainer">
-		<summary>Controls</summary>
-		<button id="runbtn">Run</button><br>
+	<div id="controlscontainer">
+	<button id="runbtn">Run</button><br>
+	<details>
+		<summary>Guide/Options</summary>
 		<button id="serialise_json">Copy nodes to clipboard</button><br>
 		<button id="serialise_py">Copy Python to clipboard</button><br>
 		<select id="selectnewnode"></select>
 		<p><b>Zoom</b> with mouse (this replaces scrolling etc because I am lazy)</p>
 		<p><b>To detach edge</b>: Click and drag from one connection to the other (same action as creating an edge)</p>
-		<p><b>To detach node</b>: Click and press 'delete'</p>
+		<p><b>To delete node</b>: Not implemented yet</p>
+		<p><b>Looping</b>: All circles can only have one input into them, except execution circles which can have limitless.</p>
 		<p><b>NOTE for developer of this program</b>: Any node that has a state-affecting action should be in the execution flow, so that its action is executed in the correct order.</p>
 	</details>
+	<details>
+		<summary>Log</summary>
+		<textarea id="log" autocomplete="off"></textarea>
+	</details>
+	</div>
 	<script>
 // NOTE: All inputs are treated the same at all times, including the 'execution flow' inputs, which are only filtered out before feeding input values into the output_fn
 
@@ -212,6 +219,7 @@ const vartype_enum2classname = ["vartype_text","vartype_int","vartype_float","va
 const rootnode = document.getElementById("nodescontainer");
 const edges_svg = document.getElementById("edges_svg");
 const selectnewnode = document.getElementById("selectnewnode");
+const log = document.getElementById("log");
 
 const set_css_var = (node, name, value) =>
 	node.style.setProperty(name, value)
@@ -225,7 +233,7 @@ const node_types = {
 	"str":["String",120,[[TYPE_INPUT,{"vartype":TYPE_TEXT,"type":"text"}]],[[TYPE_TEXT,""]],node=>[get_input_value(node)]],
 	"exe":["Exec",40,[],[[TYPE_EXECUTION,""]],(node,inputs)=>[true]],
 	
-	"log":["Log",40,[[TYPE_EXECUTION,""],[TYPE_TEXT,""]],[[TYPE_EXECUTION,""]],(node,inputs)=>{console.log("LOGGING",inputs[1]);return [true];}],
+	"log":["Log",40,[[TYPE_EXECUTION,""],[TYPE_TEXT,""]],[[TYPE_EXECUTION,""]],(node,inputs)=>{log.value += inputs[1]+"\n";return [true];}],
 	
 	"if":["If",60,[[TYPE_EXECUTION,""],[TYPE_BOOL,""]],[[TYPE_EXECUTION,"true"],[TYPE_EXECUTION,"false"]],(node,inputs)=>[inputs[1],!inputs[1]]],
 	
