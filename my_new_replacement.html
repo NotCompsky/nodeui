@@ -709,8 +709,6 @@ document.getElementById("runbtn").addEventListener("click", () => {
 							// console.log("nodeindx2inputsourcenodes[i].filtered", nodeindx2inputsourcenodes[i].filter(x => (x[2] !== TYPE_INPUT) && (x[2] !== TYPE_EXECUTION)).map((x,j)=>[x,j]));
 							nodeindx2outputvals[i] = output_fn(node, nodeindx2inputsourcenodes[i].filter(x => ((x[2] !== TYPE_INPUT)&&(x[2] !== TYPE_EXECUTION))).map((x,j) => {
 								const [srcnode, srcline, vartype] = x;
-								if ((vartype === TYPE_EXECUTION) && (nodeindx2outputvals[srcnode] === null))
-									return false;
 								return nodeindx2outputvals[srcnode][1+srcline];
 							}));
 							console.log(`Node ${i} => ${nodeindx2outputvals[i]}`);
