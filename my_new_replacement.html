@@ -455,10 +455,12 @@ document.documentElement.addEventListener("wheel", eventobj => {
 });
 
 for (let [varname,meta] of Object.entries(node_types)){
-	const opt = document.createElement("option");
-	opt.value = varname;
-	opt.innerText = meta[0];
-	selectnewnode.appendChild(opt);
+	if (varname !== "exe"){
+		const opt = document.createElement("option");
+		opt.value = varname;
+		opt.innerText = meta[0];
+		selectnewnode.appendChild(opt);
+	}
 }
 selectnewnode.addEventListener("change", () => {
 	create_node(selectnewnode.value, 0, 0);
@@ -560,12 +562,6 @@ document.getElementById("runbtn").addEventListener("click", () => {
 	
 	// WARNING: Assuming there is exactly 1 'exe' node
 	let next_expected_exe_flow_node_indx = 0;
-	for (let i of all_execution_flow_nodes){
-		if (node2typename[i] === "exe"){
-			next_expected_exe_flow_node_indx = i;
-			break;
-		}
-	}
 	
 	/*for (let i = 0;  i < N;  ++i){
 		const node = rootnode.children[i];
