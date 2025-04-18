@@ -263,7 +263,7 @@ const get_input_value = (node) => {
 };
 
 const node_types = {
-	"int":["Integer",120,[[TYPE_INPUT,{"vartype":TYPE_INT,"type":"number","step":"1"}]],[[TYPE_INT,""]],(node,inputs)=>[get_input_value(node)|0]],
+	"int":["Integer",70,[[TYPE_INPUT,{"vartype":TYPE_INT,"type":"number","step":"1"}]],[[TYPE_INT,""]],(node,inputs)=>[get_input_value(node)|0]],
 	"str":["String",120,[[TYPE_INPUT,{"vartype":TYPE_TEXT,"type":"text"}]],[[TYPE_TEXT,""]],node=>[get_input_value(node)]],
 	"exe":["Exec",40,[],[[TYPE_EXECUTION,""]],(node,inputs)=>[true]],
 	
