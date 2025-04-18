@@ -46,6 +46,9 @@ body {
 	position:absolute;
 	transform:matrix(var(--P0), 0, 0, var(--P5), var(--P12), var(--P13));
 }
+#selectnewnode {
+	position:fixed;
+}
 .node, input.node_input {
 	width:calc(var(--P0) * var(--node-w) - var(--P0) * 1em);
 	font-size:0.75em;
@@ -157,6 +160,31 @@ node-circle {
 	--node-circle-cl2: #fff;
 }
 
+
+.newnode_opt {
+	display:none;
+}
+
+.newnode_input_vartype_text > .newnode_opt.newnode_input_vartype_text,
+.newnode_input_vartype_int > .newnode_opt.newnode_input_vartype_int,
+.newnode_input_vartype_float > .newnode_opt.newnode_input_vartype_float,
+.newnode_input_vartype_execution > .newnode_opt.newnode_input_vartype_execution,
+.newnode_input_vartype_bool > .newnode_opt.newnode_input_vartype_bool,
+.newnode_input_vartype_strlist > .newnode_opt.newnode_input_vartype_strlist,
+.newnode_input_vartype_intlist > .newnode_opt.newnode_input_vartype_intlist,
+
+.newnode_output_vartype_text > .newnode_opt.newnode_output_vartype_text,
+.newnode_output_vartype_int > .newnode_opt.newnode_output_vartype_int,
+.newnode_output_vartype_float > .newnode_opt.newnode_output_vartype_float,
+.newnode_output_vartype_execution > .newnode_opt.newnode_output_vartype_execution,
+.newnode_output_vartype_bool > .newnode_opt.newnode_output_vartype_bool,
+.newnode_output_vartype_strlist > .newnode_opt.newnode_output_vartype_strlist,
+.newnode_output_vartype_intlist > .newnode_opt.newnode_output_vartype_intlist
+{
+	display:unset;
+}
+
+
 #edges_svg {
 	position:absolute;
 	top:0;
@@ -178,12 +206,18 @@ node-circle {
 	stroke:yellow;
 	stroke-width:3;
 }
+.hidden {
+	display:none;
+}
 	</style>
 </head>
 <body>
 	<div id="root">
 		<div id="nodescontainer"></div>
 		<svg id="edges_svg"></svg>
+		<select id="selectnewnode" class="hidden">
+			<option value="">(None)</option>
+		</select>
 	</div>
 	<div id="controlscontainer">
 	<button id="runbtn">Run</button><br>
@@ -191,7 +225,7 @@ node-circle {
 		<summary>Guide/Options</summary>
 		<button id="serialise_json">Copy nodes to clipboard</button><br>
 		<button id="serialise_py">Copy Python to clipboard</button><br>
-		<select id="selectnewnode"></select>
+		<p><b>Add new node</b> by clicking on an empty space; or click+drag from a circle to restrict options to relevant nodes</p>
 		<p><b>Zoom</b> with mouse (this replaces scrolling etc because I am lazy)</p>
 		<p><b>To detach edge</b>: Click and drag from one connection to the other (same action as creating an edge)</p>
 		<p><b>To delete node</b>: Not implemented yet</p>
@@ -456,14 +490,26 @@ document.documentElement.addEventListener("wheel", eventobj => {
 
 for (let [varname,meta] of Object.entries(node_types)){
 	if (varname !== "exe"){
+		const [title, node_w, input_vars, outputs, output_fn] = meta;
 		const opt = document.createElement("option");
 		opt.value = varname;
-		opt.innerText = meta[0];
+		opt.innerText = title;
+		opt.classList.add("newnode_opt");
+		for (let input of input_vars){
+			if (vartype_enum2classname[input[0]] !== null)
+				opt.classList.add("newnode_input_"+vartype_enum2classname[input[0]]);
+		}
+		for (let output of outputs){
+			opt.classList.add("newnode_output_"+vartype_enum2classname[output[0]]);
+		}
 		selectnewnode.appendChild(opt);
 	}
 }
+let selectnewnode_x = 0;
+let selectnewnode_y = 0;
 selectnewnode.addEventListener("change", () => {
-	create_node(selectnewnode.value, 0, 0);
+	create_node(selectnewnode.value, selectnewnode_x, selectnewnode_y);
+	selectnewnode.classList.add("hidden");
 });
 
 let currently_dragging_nodecircle = null;
@@ -547,6 +593,42 @@ document.documentElement.addEventListener("pointerup", eventobj => {
 				if (output_has_no_prev_input)
 					create_edge(src_indx, dst_indx, src_line, dst_line, target.dataset.vartype|0);
 			}
+			}
+			break;
+		case "DIV":
+			if (target === rootnode){
+				selectnewnode_x = eventobj.clientX;
+				selectnewnode_y = eventobj.clientY;
+				if (currently_dragging_nodecircle === null){
+					for (let vartypename of vartype_enum2classname){
+						if (vartypename !== null){
+							selectnewnode.classList.add("newnode_input_"+vartypename);
+							selectnewnode.classList.add("newnode_output_"+vartypename);
+						}
+					}
+				} else {
+					const restrict_to_vartypename = vartype_enum2classname[currently_dragging_nodecircle.dataset.vartype];
+					for (let vartypename of vartype_enum2classname){
+						if (vartypename !== null){
+							if (vartypename === restrict_to_vartypename){
+								if (currently_dragging_nodecircle.dataset.iotype === "node_input"){
+									selectnewnode.classList.remove("newnode_input_"+vartypename);
+									selectnewnode.classList.add("newnode_output_"+vartypename);
+								} else {
+									selectnewnode.classList.add("newnode_input_"+vartypename);
+									selectnewnode.classList.remove("newnode_output_"+vartypename);
+								}
+							} else {
+								selectnewnode.classList.remove("newnode_input_"+vartypename);
+								selectnewnode.classList.remove("newnode_output_"+vartypename);
+							}
+						}
+					}
+				}
+				selectnewnode.style.left = eventobj.clientX+"px";
+				selectnewnode.style.top = eventobj.clientY+"px";
+				selectnewnode.classList.remove("hidden");
+				selectnewnode.showPicker();
 			}
 			break;
 	}
