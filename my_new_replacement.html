@@ -287,8 +287,8 @@ const node_types = {
 	"xor":["XOR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[false,inputs[0]!==inputs[1]]],
 	"not":["NOT",40,[[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[false,!inputs[0]]],
 	
-	"++":["++",30,[[TYPE_EXECUTION,""],[TYPE_INT,""]],[[TYPE_EXECUTION,""],[TYPE_INT,""]],(node,inputs)=>[true,true,inputs[0]+1]],
-	"--":["--",30,[[TYPE_EXECUTION,""],[TYPE_INT,""]],[[TYPE_EXECUTION,""],[TYPE_INT,""]],(node,inputs)=>[true,true,inputs[0]-1]],
+	"++":["++",30,[[TYPE_EXECUTION,""],[TYPE_INT,""]],[[TYPE_EXECUTION,""],[TYPE_INT,""]],(node,inputs)=>{++inputs[0];return [true,true,inputs[0]];}],
+	"--":["--",30,[[TYPE_EXECUTION,""],[TYPE_INT,""]],[[TYPE_EXECUTION,""],[TYPE_INT,""]],(node,inputs)=>{--inputs[0];return [true,true,inputs[0]];}],
 	"int+int":["+",20,[[TYPE_INT,""],[TYPE_INT,""]],[[TYPE_INT,""]],(node,inputs)=>[false,inputs[0]+inputs[1]]],
 	"int->str":["toString",50,[[TYPE_INT,""]],[[TYPE_TEXT,""]],(node,inputs)=>[false,inputs[0].toString()]],
 	"bool->str":["toString",50,[[TYPE_BOOL,""]],[[TYPE_TEXT,""]],(node,inputs)=>[false,inputs[0].toString()]],
@@ -707,11 +707,28 @@ document.getElementById("runbtn").addEventListener("click", () => {
 						} else {
 							// console.log("nodeindx2inputsourcenodes[i]",nodeindx2inputsourcenodes[i]);
 							// console.log("nodeindx2inputsourcenodes[i].filtered", nodeindx2inputsourcenodes[i].filter(x => (x[2] !== TYPE_INPUT) && (x[2] !== TYPE_EXECUTION)).map((x,j)=>[x,j]));
-							nodeindx2outputvals[i] = output_fn(node, nodeindx2inputsourcenodes[i].filter(x => ((x[2] !== TYPE_INPUT)&&(x[2] !== TYPE_EXECUTION))).map((x,j) => {
-								const [srcnode, srcline, vartype] = x;
-								return nodeindx2outputvals[srcnode][1+srcline];
-							}));
 							console.log(`Node ${i} => ${nodeindx2outputvals[i]}`);
+							const fn_inputs = [];
+							let is_mutable = false;
+							for (let j = 0, k = 0;  j < nodeindx2inputsourcenodes[i].length;  ++j){
+								const [srcnode, srcline, vartype] = nodeindx2inputsourcenodes[i][j];
+								if (srcnode !== null)
+									is_mutable ||= nodeindx2outputvals[srcnode][0];
+								if ((vartype !== TYPE_INPUT) && (vartype !== TYPE_EXECUTION)){
+									fn_inputs[k++] = nodeindx2outputvals[srcnode][1+srcline];
+								}
+							}
+							
+							nodeindx2outputvals[i] = output_fn(node, fn_inputs);
+							nodeindx2outputvals[i][0] ||= is_mutable;
+							
+							// Apply changes, if any, to input values:
+							for (let j = 0, k = 0;  j < nodeindx2inputsourcenodes[i].length;  ++j){
+								const [srcnode, srcline, vartype] = nodeindx2inputsourcenodes[i][j];
+								if ((vartype !== TYPE_INPUT) && (vartype !== TYPE_EXECUTION)){
+									nodeindx2outputvals[srcnode][1+srcline] = fn_inputs[k++];
+								}
+							}
 						}
 						changed_since_last_loop = true;
 						
