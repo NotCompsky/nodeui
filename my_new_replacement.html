@@ -227,6 +227,7 @@ node-circle {
 		<summary>Guide/Options</summary>
 		<button id="serialise_json">Copy nodes to clipboard</button><br>
 		<button id="serialise_py">Copy Python to clipboard</button><br>
+		<p><b>NOTE</b>: Loops don't work as expected. But if the execution chain (yellow circles) is linear, it should work flawlessly.</p>
 		<p><b>Add new node</b> by clicking on an empty space; or click+drag from a circle to restrict options to relevant nodes</p>
 		<p><b>Zoom</b> with mouse (this replaces scrolling etc because I am lazy)</p>
 		<p><b>To detach edge</b>: Click and drag from one connection to the other (same action as creating an edge)</p>
@@ -240,7 +241,7 @@ node-circle {
 	</details>
 	</div>
 	<script>
-// NOTE: All inputs are treated the same at all times, including the 'execution flow' inputs, which are only filtered out before feeding input values into the output_fn
+// NOTE: All inputs are treated the same at all times, including the 'execution flow' inputs
 
 const TYPE_TEXT = 0;
 const TYPE_INT = 1;
