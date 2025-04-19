@@ -665,7 +665,6 @@ document.getElementById("runbtn").addEventListener("click", () => {
 		for (let i = 0;  i < N;  ++i){
 			if ((nodeindx2outputvals[i] === null) || (nodeindx2outputvals[i][0])){
 				let all_inputs_done = true;
-				console.log(rootnode.children[i]);
 				// console.log(`nodeindx2inputsourcenodes[${i}]`, JSON.stringify(nodeindx2inputsourcenodes[i]));
 				// console.log(nodeindx2inputsourcenodes.map(x => (x===null)?"NULL":(x[0]===null?"x[0]==NULL":"x[0]=="+x[0])));
 				for (let thing of nodeindx2inputsourcenodes[i]){
@@ -675,7 +674,6 @@ document.getElementById("runbtn").addEventListener("click", () => {
 						(thing[2] === TYPE_EXECUTION) // Allowing for looping - remember it doesn't execute unless the execution-input is true so we don't need to check for non-null anyway
 					);
 				}
-				// console.log(`all_inputs_done[${i}]`, all_inputs_done);
 				if (all_inputs_done){
 					if ((!all_execution_flow_nodes.includes(i)) || (i === next_expected_exe_flow_node_indx)){
 						const node = rootnode.children[i];
@@ -687,9 +685,7 @@ document.getElementById("runbtn").addEventListener("click", () => {
 							// probably execution flow node
 							nodeindx2outputvals[i] = [false];
 						} else {
-							// console.log("nodeindx2inputsourcenodes[i]",nodeindx2inputsourcenodes[i]);
 							// console.log("nodeindx2inputsourcenodes[i].filtered", nodeindx2inputsourcenodes[i].filter(x => (x[2] !== TYPE_INPUT) && (x[2] !== TYPE_EXECUTION)).map((x,j)=>[x,j]));
-							console.log(`Node ${i} => ${nodeindx2outputvals[i]}`);
 							const fn_inputs = [];
 							let is_mutable = false;
 							for (let j = 0, k = 0;  j < nodeindx2inputsourcenodes[i].length;  ++j){
