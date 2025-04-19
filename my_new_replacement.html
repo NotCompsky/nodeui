@@ -393,9 +393,9 @@ const create_node = (node_type_name, x, y) => {
 const set_pth_coords = edge_indx => {
 	const [node1_indx, node2_indx, linenum1, linenum2, pth] = edges[edge_indx];
 	const x1 = node_coords[node1_indx*3] + node_coords[node1_indx*3 + 2];
-	const y1 = node_coords[(node1_indx*3) + 1];
+	const y1 = node_coords[(node1_indx*3) + 1] + 4;
 	const x2 = node_coords[node2_indx*3];
-	const y2 = node_coords[(node2_indx*3) + 1];
+	const y2 = node_coords[(node2_indx*3) + 1] + 4;
 	pth.setAttributeNS(null, "d", `M${x1},${y1+36+24*linenum1} L${x2},${y2+36+24*linenum2}`);
 };
 const create_edge = (srcnode, dstnode, srcline, dstline, vartype) => {
