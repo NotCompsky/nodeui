@@ -226,7 +226,6 @@ node-circle {
 	<details>
 		<summary>Guide/Options</summary>
 		<button id="serialise_json">Copy nodes to clipboard</button><br>
-		<button id="serialise_py">Copy Python to clipboard</button><br>
 		<p><b>NOTE</b>: Loops don't work as expected. But if the execution chain (yellow circles) is linear, it should work flawlessly.</p>
 		<p><b>Add new node</b> by clicking on an empty space; or click+drag from a circle to restrict options to relevant nodes</p>
 		<p><b>Zoom</b> with mouse (this replaces scrolling etc because I am lazy)</p>
@@ -435,21 +434,6 @@ const get_all_nodes_as_tidied_arrays = () => {
 };
 const serialise_all_nodes = () => {
 	return JSON.stringify(get_all_nodes_as_tidied_arrays());
-};
-const serialise_all_nodes_as_python = () => {
-	const [nodes, edges, input_values] = get_all_nodes_as_tidied_arrays();
-	
-	let varindx = 0;
-	let py = "";
-	for (let val of input_values){
-		py += `v${varindx++} = ${JSON.stringify(val)}\n`;
-	}
-	
-	const nodeindx2outputvals = new Array(nodeindx2inputsourcenodes.length);
-	nodeindx2outputvals.fill(null);
-	execute_graph(nodeindx2outputvals, true);
-	
-	return py;
 };
 const deserialise_all_nodes = metas => {
 	node_coords.length = 0;
@@ -755,9 +739,6 @@ document.getElementById("runbtn").addEventListener("click", () => {
 });
 document.getElementById("serialise_json").addEventListener("click", () => {
 	navigator.clipboard.writeText(serialise_all_nodes());
-});
-document.getElementById("serialise_py").addEventListener("click", () => {
-	navigator.clipboard.writeText(serialise_all_nodes_as_python());
 });
 	</script>
 </body>
