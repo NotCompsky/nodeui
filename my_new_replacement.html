@@ -47,6 +47,8 @@ body {
 	transform:matrix(var(--P0), 0, 0, var(--P5), var(--P12), var(--P13));
 }
 #selectnewnode {
+}
+.selectnewnode_floating {
 	position:fixed;
 }
 .node, input.node_input {
@@ -161,7 +163,7 @@ node-circle {
 }
 
 
-.newnode_opt {
+.selectnewnode_floating > .newnode_opt {
 	display:none;
 }
 
@@ -215,12 +217,12 @@ node-circle {
 	<div id="root">
 		<div id="nodescontainer"></div>
 		<svg id="edges_svg"></svg>
-		<select id="selectnewnode" class="hidden">
-			<option value="">(None)</option>
-		</select>
 	</div>
 	<div id="controlscontainer">
 	<button id="runbtn">Run</button><br>
+	<select id="selectnewnode">
+		<option value="">+node (choose)</option>
+	</select>
 	<details>
 		<summary>Guide/Options</summary>
 		<button id="serialise_json">Copy nodes to clipboard</button><br>
@@ -523,7 +525,7 @@ let selectnewnode_x = 0;
 let selectnewnode_y = 0;
 selectnewnode.addEventListener("change", () => {
 	create_node(selectnewnode.value, selectnewnode_x, selectnewnode_y);
-	selectnewnode.classList.add("hidden");
+	selectnewnode.classList.remove("selectnewnode_floating");
 });
 
 let currently_dragging_nodecircle = null;
@@ -567,41 +569,35 @@ document.documentElement.addEventListener("pointermove", eventobj => {
 });
 document.documentElement.addEventListener("pointerup", eventobj => {
 	let target = eventobj.target;
-	if (target === rootnode){
+	if ((target === rootnode) && (currently_dragging_nodecircle !== null)){
 		selectnewnode_x = eventobj.clientX;
 		selectnewnode_y = eventobj.clientY;
-		if (currently_dragging_nodecircle === null){
-			for (let vartypename of vartype_enum2classname){
-				if (vartypename !== null){
-					selectnewnode.classList.add("newnode_input_"+vartypename);
-					selectnewnode.classList.add("newnode_output_"+vartypename);
-				}
-			}
-		} else {
-			const restrict_to_vartypename = vartype_enum2classname[currently_dragging_nodecircle.dataset.vartype];
-			for (let vartypename of vartype_enum2classname){
-				if (vartypename !== null){
-					if (vartypename === restrict_to_vartypename){
-						if (currently_dragging_nodecircle.dataset.iotype === "node_input"){
-							selectnewnode.classList.remove("newnode_input_"+vartypename);
-							selectnewnode.classList.add("newnode_output_"+vartypename);
-						} else {
-							selectnewnode.classList.add("newnode_input_"+vartypename);
-							selectnewnode.classList.remove("newnode_output_"+vartypename);
-						}
-					} else {
+		
+		const restrict_to_vartypename = vartype_enum2classname[currently_dragging_nodecircle.dataset.vartype];
+		for (let vartypename of vartype_enum2classname){
+			if (vartypename !== null){
+				if (vartypename === restrict_to_vartypename){
+					if (currently_dragging_nodecircle.dataset.iotype === "node_input"){
 						selectnewnode.classList.remove("newnode_input_"+vartypename);
+						selectnewnode.classList.add("newnode_output_"+vartypename);
+					} else {
+						selectnewnode.classList.add("newnode_input_"+vartypename);
 						selectnewnode.classList.remove("newnode_output_"+vartypename);
 					}
+				} else {
+					selectnewnode.classList.remove("newnode_input_"+vartypename);
+					selectnewnode.classList.remove("newnode_output_"+vartypename);
 				}
 			}
 		}
 		selectnewnode.style.left = eventobj.clientX+"px";
 		selectnewnode.style.top = eventobj.clientY+"px";
-		selectnewnode.classList.remove("hidden");
+		selectnewnode.classList.add("selectnewnode_floating");
 		selectnewnode.showPicker();
 	} else {
-		selectnewnode.classList.add("hidden");
+		selectnewnode.style.left = "0";
+		selectnewnode.style.top = "0";
+		selectnewnode.classList.remove("selectnewnode_floating");
 	}
 	switch (target.tagName){
 		case "NODE-CIRCLE":
