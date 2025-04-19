@@ -290,6 +290,8 @@ const node_types = {
 	"xor":["XOR",40,[[TYPE_BOOL,""],[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[false,inputs[0]!==inputs[1]]],
 	"not":["NOT",40,[[TYPE_BOOL,""]],[[TYPE_BOOL,""]],(node,inputs)=>[false,!inputs[0]]],
 	
+	"=":["=",80,[[TYPE_EXECUTION,""],[TYPE_INT,"var"],[TYPE_INT,""]],[[TYPE_EXECUTION,""],[TYPE_INT,"var"]],(node,inputs)=>{inputs[0]=inputs[1];return [true,true,inputs[0]];}],
+	"+=":["+=",80,[[TYPE_EXECUTION,""],[TYPE_INT,"var"],[TYPE_INT,"incr"]],[[TYPE_EXECUTION,""],[TYPE_INT,"var"]],(node,inputs)=>{inputs[0]+=inputs[1];return [true,true,inputs[0]];}],
 	"++":["++",30,[[TYPE_EXECUTION,""],[TYPE_INT,""]],[[TYPE_EXECUTION,""],[TYPE_INT,""]],(node,inputs)=>{++inputs[0];return [true,true,inputs[0]];}],
 	"--":["--",30,[[TYPE_EXECUTION,""],[TYPE_INT,""]],[[TYPE_EXECUTION,""],[TYPE_INT,""]],(node,inputs)=>{--inputs[0];return [true,true,inputs[0]];}],
 	"int+int":["+",20,[[TYPE_INT,""],[TYPE_INT,""]],[[TYPE_INT,""]],(node,inputs)=>[false,inputs[0]+inputs[1]]],
