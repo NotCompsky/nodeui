@@ -1,0 +1,208 @@
+:root {
+	font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+	tab-size:4;
+	--node-theme-cl:#666;
+	
+	--P0:1;
+	--P5:1;
+	--P12:0;
+	--P13:0;
+	
+	--node-w:120px;
+}
+body {
+	width:100svw;
+	height:100svh;
+	overflow:hidden; /* position:absolute means that objects won't be hidden if this is only applied to #root */
+}
+* {
+	margin:0;
+	padding:0;
+	box-sizing:border-box;
+}
+#root {
+	width:100%;
+	height:100%;
+	background:#000;
+}
+#nodescontainer {
+	width:100%;
+	height:100%;
+	
+	font-size:calc(var(--P0) * 16px);
+	line-height:calc(var(--P0) * 24px);
+}
+#edges_svg {
+	width:100%;
+	height:100%;
+	/*transform: translate(calc(1px * var(--P12)), calc(1px * var(--P13))) scale(var(--P0)); */
+	transform-box:fill-box;
+	transform-origin: top left;
+	position:absolute;
+	transform:matrix(var(--P0), 0, 0, var(--P5), var(--P12), var(--P13));
+}
+#selectnewnode {
+}
+.selectnewnode_floating {
+	position:fixed;
+}
+.node, input.node_input {
+	width:calc(var(--P0) * var(--node-w) - var(--P0) * 1em);
+	font-size:0.75em;
+}
+input:invalid {
+	background-color: ivory;
+	border: none;
+	outline: calc(var(--P0) * 2px) solid red;
+}
+.node {
+	transform:translate(calc(var(--P0) * var(--dx,0) + 1px * var(--P12)), calc(var(--P5) * var(--dy,0) + 1px * var(--P13)));
+	position:absolute;
+	
+	cursor:pointer;
+	touch-action:none;
+	user-select:none;
+	
+	border:1px solid var(--node-theme-cl);
+	
+	text-align:center;
+	color:#fff;
+	background-color:#1f2937;
+	border-radius:calc(var(--P0) * 5px);
+	width:calc(var(--P0) * var(--node-w));
+}
+.node_title {
+	border-top-left-radius:.25rem;
+	border-top-right-radius:.25rem;
+	background:var(--node-theme-cl);
+}
+.node_contents {
+	display:flex;
+	flex-direction:column;
+	gap:calc(var(--P0) * 6px);
+	
+	padding:calc(var(--P0) * 6px);
+}
+.node_row {
+	position:relative;
+	display:flex;
+	justify-content:space-between;
+	flex-direction:row;
+	gap:calc(var(--P0) * 24px);
+}
+.node_row_col {
+	display:flex;
+	align-items:center;
+	flex-grow:1;
+	height:calc(var(--P0) * 18px);
+}
+node-node, node-circle, node-unclickable {
+	display:block;
+}
+node-circle {
+	position:absolute;
+	width:calc(var(--P0) * 10px);
+	height:calc(var(--P0) * 10px);
+	cursor:crosshair;
+	border-radius:100%;
+	border:1px solid var(--node-circle-cl, #fff);
+	background:var(--node-circle-cl2, #fff);
+}
+.node_input > node-circle {
+	left:calc(var(--P0) * -10px); /* -6px in original... */
+}
+.node_output > node-circle {
+	right:calc(var(--P0) * -10px); /* -6px in original... */
+}
+
+.node_input {
+	justify-content:flex-start;
+}
+.node_output {
+	justify-content:flex-end;
+}
+
+.sourcenode {
+	--node-theme-cl:red;
+}
+.exitnode {
+	--node-theme-cl:blue;
+}
+
+.vartype_text {
+	--node-circle-cl: #794acf;
+	--node-circle-cl2: #000;
+}
+.vartype_int {
+	--node-circle-cl: #fc8c01;
+	--node-circle-cl2: #000;
+}
+.vartype_float {
+	--node-circle-cl: #cce82d;
+	--node-circle-cl2: #000;
+}
+.vartype_execution {
+	--node-circle-cl: #ff0;
+	--node-circle-cl2: #ff0;
+}
+.vartype_bool {
+	--node-circle-cl: #0f0;
+	--node-circle-cl2: #000;
+}
+.vartype_strlist {
+	--node-circle-cl: #794acf;
+	--node-circle-cl2: #fff;
+}
+.vartype_intlist {
+	--node-circle-cl: #fc8c01;
+	--node-circle-cl2: #fff;
+}
+
+
+.selectnewnode_floating > .newnode_opt {
+	display:none;
+}
+
+.newnode_input_vartype_text > .newnode_opt.newnode_input_vartype_text,
+.newnode_input_vartype_int > .newnode_opt.newnode_input_vartype_int,
+.newnode_input_vartype_float > .newnode_opt.newnode_input_vartype_float,
+.newnode_input_vartype_execution > .newnode_opt.newnode_input_vartype_execution,
+.newnode_input_vartype_bool > .newnode_opt.newnode_input_vartype_bool,
+.newnode_input_vartype_strlist > .newnode_opt.newnode_input_vartype_strlist,
+.newnode_input_vartype_intlist > .newnode_opt.newnode_input_vartype_intlist,
+
+.newnode_output_vartype_text > .newnode_opt.newnode_output_vartype_text,
+.newnode_output_vartype_int > .newnode_opt.newnode_output_vartype_int,
+.newnode_output_vartype_float > .newnode_opt.newnode_output_vartype_float,
+.newnode_output_vartype_execution > .newnode_opt.newnode_output_vartype_execution,
+.newnode_output_vartype_bool > .newnode_opt.newnode_output_vartype_bool,
+.newnode_output_vartype_strlist > .newnode_opt.newnode_output_vartype_strlist,
+.newnode_output_vartype_intlist > .newnode_opt.newnode_output_vartype_intlist
+{
+	display:unset;
+}
+
+
+#edges_svg {
+	position:absolute;
+	top:0;
+	left:0;
+	stroke:#fff;
+	stroke-width:2;
+}
+
+#controlscontainer {
+	position:fixed;
+	top:0;
+	right:0;
+	color:#fff;
+}
+
+:focus {
+	border:3px solid yellow;
+	stroke:yellow;
+	stroke-width:3;
+}
+.hidden {
+	display:none;
+}
